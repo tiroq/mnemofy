@@ -173,9 +173,28 @@ The default `base` model offers a good balance of speed and accuracy. Use `tiny`
 - ffmpeg
 - Dependencies (automatically installed):
   - typer
-  - openai-whisper
+  - faster-whisper
   - rich
   - pydantic
+
+## Troubleshooting
+
+### OpenMP Library Conflict (macOS)
+
+If you encounter an error about `libiomp5.dylib already initialized`, set this environment variable:
+
+```bash
+export KMP_DUPLICATE_LIB_OK=TRUE
+mnemofy transcribe your_file.mp4
+```
+
+Or run it inline:
+
+```bash
+KMP_DUPLICATE_LIB_OK=TRUE mnemofy transcribe your_file.mp4
+```
+
+This is a known issue with multiple OpenMP runtimes being linked (common with ctranslate2/faster-whisper).
 
 ## License
 
