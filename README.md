@@ -7,7 +7,7 @@
 ## Features
 
 - 🎵 **Audio Extraction**: Automatically extracts audio from video files using ffmpeg
-- 🎤 **Speech Transcription**: Fast local transcription using Faster Whisper (no API keys needed)
+- 🎤 **Speech Transcription**: Local transcription using OpenAI Whisper (no API keys  needed)
 - 📝 **Structured Notes**: Generates Markdown notes with:
   - Topics discussed with timestamps
   - Decisions made with timestamps
@@ -155,25 +155,25 @@ mypy src/
 
 ## Whisper Models
 
-mnemofy uses Faster Whisper for efficient local transcription. All model sizes are supported:
+mnemofy supports all Whisper model sizes:
 
-| Model  | Parameters | Speed      | Accuracy | Memory  |
-|--------|-----------|------------|----------|---------|  
-| tiny   | 39M       | Fastest    | Good     | ~1 GB   |
-| base   | 74M       | Fast       | Better   | ~1 GB   |
-| small  | 244M      | Medium     | Great    | ~2 GB   |
-| medium | 769M      | Slow       | Excellent| ~5 GB   |
-| large  | 1550M     | Slowest    | Best     | ~10 GB  |
+| Model  | Parameters | Speed      | Accuracy |
+|--------|-----------|------------|----------|
+| tiny   | 39M       | Fastest    | Good     |
+| base   | 74M       | Fast       | Better   |
+| small  | 244M      | Medium     | Great    |
+| medium | 769M      | Slow       | Excellent|
+| large  | 1550M     | Slowest    | Best     |
 
 The default `base` model offers a good balance of speed and accuracy. Use `tiny` for quick tests or `medium`/`large` for maximum accuracy.
 
 ## Requirements
 
-- Python 3.9+
+- Python 3.9-3.13 (Python 3.14+ not yet supported by dependencies)
 - ffmpeg
 - Dependencies (automatically installed):
   - typer
-  - faster-whisper
+  - openai-whisper
   - rich
   - pydantic
 
