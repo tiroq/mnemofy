@@ -1,13 +1,14 @@
-"""Speech transcription module using Faster Whisper."""
+"""Speech transcription module using OpenAI Whisper."""
 
+import warnings
 from pathlib import Path
 from typing import Any
 
-from faster_whisper import WhisperModel
+import whisper
 
 
 class Transcriber:
-    """Transcribe audio using Faster Whisper."""
+    """Transcribe audio using OpenAI Whisper."""
 
     def __init__(self, model_name: str = "base") -> None:
         """
@@ -22,8 +23,10 @@ class Transcriber:
     def _load_model(self) -> None:
         """Load the Whisper model if not already loaded."""
         if self.model is None:
-            # Use CPU and int8 for better compatibility
-            self.model = WhisperModel(self.model_name, device="cpu", compute_type="int8")
+            # Suppress FP16 warning on CPU
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                self.model = whisper.load_model(self.model_name)
 
     def transcribe(self, audio_file: Path) -> dict[str, Any]:
         """
@@ -46,27 +49,11 @@ class Transcriber:
 
         try:
             # Transcribe with word-level timestamps
-            segments, info = self.model.transcribe(
+            result: dict[str, Any] = self.model.transcribe(
                 str(audio_file),
                 word_timestamps=True,
+                verbose=False,
             )
-            
-            # Convert to format compatible with original API
-            result: dict[str, Any] = {
-                "text": "",
-                "segments": [],
-                "language": info.language,
-            }
-            
-            for segment in segments:
-                segment_dict = {
-                    "start": segment.start,
-                    "end": segment.end,
-                    "text": segment.text,
-                }
-                result["segments"].append(segment_dict)
-                result["text"] += segment.text
-            
             return result
         except Exception as e:
             raise RuntimeError(f"Failed to transcribe audio: {e}") from e
