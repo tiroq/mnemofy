@@ -38,7 +38,7 @@ dev = [
 ]
 
 [project.scripts]
-mnemofy = "mnemofy.cli:app"
+mnemofy = "mnemofy.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/tiroq/mnemofy"

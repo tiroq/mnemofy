@@ -41,10 +41,6 @@ class AnnotatedSegment:
     is_action: bool = False
     mentions: set[str] = field(default_factory=set)
 
-    def __post_init__(self) -> None:
-        """Initialize mentions set if None."""
-        pass
-
 
 class NoteGenerator:
     """Generate structured Markdown notes from transcription."""
