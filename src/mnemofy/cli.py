@@ -124,16 +124,16 @@ def transcribe(
             except Exception:
                 pass  # Ignore cleanup errors
 
-        console.print(f"\n[bold green]✓ Success![/bold green]")
+        console.print("\n[bold green]✓ Success![/bold green]")
         console.print(f"[dim]Notes saved to:[/dim] {output}")
 
         # Show stats
-        console.print(f"\n[bold]Statistics:[/bold]")
+        console.print("\n[bold]Statistics:[/bold]")
         console.print(f"  Segments: {len(segments)}")
         topics = sum(1 for s in annotated if s.is_topic)
         decisions = sum(1 for s in annotated if s.is_decision)
         actions = sum(1 for s in annotated if s.is_action)
-        all_mentions = set()
+        all_mentions: set[str] = set()
         for s in annotated:
             all_mentions.update(s.mentions)
 

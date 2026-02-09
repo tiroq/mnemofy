@@ -1,8 +1,8 @@
 """Note generation module for creating structured Markdown notes."""
 
 import re
-from dataclasses import dataclass
-from typing import Any, Dict, List, Set
+from dataclasses import dataclass, field
+from typing import Any, Optional
 
 
 @dataclass
@@ -39,12 +39,11 @@ class AnnotatedSegment:
     is_topic: bool = False
     is_decision: bool = False
     is_action: bool = False
-    mentions: Set[str] = None
+    mentions: set[str] = field(default_factory=set)
 
     def __post_init__(self) -> None:
         """Initialize mentions set if None."""
-        if self.mentions is None:
-            self.mentions = set()
+        pass
 
 
 class NoteGenerator:
@@ -85,7 +84,7 @@ class NoteGenerator:
         )
         self.mention_regex = re.compile(self.MENTION_PATTERN)
 
-    def _extract_mentions(self, text: str) -> Set[str]:
+    def _extract_mentions(self, text: str) -> set[str]:
         """Extract @mentions from text."""
         return set(self.mention_regex.findall(text))
 
@@ -102,8 +101,8 @@ class NoteGenerator:
         return bool(self.action_regex.search(text))
 
     def annotate_segments(
-        self, segments: List[Dict[str, Any]]
-    ) -> List[AnnotatedSegment]:
+        self, segments: list[dict[str, Any]]
+    ) -> list[AnnotatedSegment]:
         """
         Annotate transcription segments.
 
@@ -134,7 +133,7 @@ class NoteGenerator:
         return annotated
 
     def generate_markdown(
-        self, annotated_segments: List[AnnotatedSegment], title: str = "Meeting Notes"
+        self, annotated_segments: list[AnnotatedSegment], title: str = "Meeting Notes"
     ) -> str:
         """
         Generate Markdown notes from annotated segments.
@@ -180,7 +179,7 @@ class NoteGenerator:
             lines.append("")
 
         # Mentions section
-        all_mentions: Set[str] = set()
+        all_mentions: set[str] = set()
         for segment in annotated_segments:
             all_mentions.update(segment.mentions)
 

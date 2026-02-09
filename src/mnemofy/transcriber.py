@@ -2,7 +2,7 @@
 
 import warnings
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 import whisper
 
@@ -28,7 +28,7 @@ class Transcriber:
                 warnings.simplefilter("ignore")
                 self.model = whisper.load_model(self.model_name)
 
-    def transcribe(self, audio_file: Path) -> Dict[str, Any]:
+    def transcribe(self, audio_file: Path) -> dict[str, Any]:
         """
         Transcribe audio file.
 
@@ -49,7 +49,7 @@ class Transcriber:
 
         try:
             # Transcribe with word-level timestamps
-            result = self.model.transcribe(
+            result: dict[str, Any] = self.model.transcribe(
                 str(audio_file),
                 word_timestamps=True,
                 verbose=False,
@@ -58,7 +58,7 @@ class Transcriber:
         except Exception as e:
             raise RuntimeError(f"Failed to transcribe audio: {e}") from e
 
-    def get_segments(self, transcription: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def get_segments(self, transcription: dict[str, Any]) -> list[dict[str, Any]]:
         """
         Extract segments from transcription result.
 
@@ -68,9 +68,10 @@ class Transcriber:
         Returns:
             List of segment dictionaries with text, start, and end times
         """
-        return transcription.get("segments", [])
+        segments: list[dict[str, Any]] = transcription.get("segments", [])
+        return segments
 
-    def get_full_text(self, transcription: Dict[str, Any]) -> str:
+    def get_full_text(self, transcription: dict[str, Any]) -> str:
         """
         Get full transcribed text.
 
@@ -80,4 +81,5 @@ class Transcriber:
         Returns:
             Complete transcribed text
         """
-        return transcription.get("text", "").strip()
+        text: str = transcription.get("text", "")
+        return text.strip()
