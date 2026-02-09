@@ -2,12 +2,12 @@
 
 ![mnemofy Logo](https://raw.githubusercontent.com/tiroq/mnemofy/main/assets/mnemofy.png)
 
-**mnemofy** extracts audio from media files, transcribes speech using OpenAI Whisper, and produces structured meeting notes with topics, decisions, action items, and mentions with timestamps.
+**mnemofy** extracts audio from media files, transcribes speech using faster-whisper, and produces structured meeting notes with topics, decisions, action items, and mentions with timestamps.
 
 ## Features
 
 - 🎵 **Audio Extraction**: Automatically extracts audio from video files using ffmpeg
-- 🎤 **Speech Transcription**: Local transcription using OpenAI Whisper (no API keys  needed)
+- 🎤 **Speech Transcription**: Fast local transcription using faster-whisper (no API keys needed)
 - 📝 **Structured Notes**: Generates Markdown notes with:
   - Topics discussed with timestamps
   - Decisions made with timestamps
