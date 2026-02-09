@@ -93,7 +93,7 @@ tasks:
     cmds:
       - echo "Bumping {{.PART}} version {{.CURRENT_VERSION}} -> {{.NEW_VERSION}}"
       - sed -i.bak 's/^version = ".*"/version = "{{.NEW_VERSION}}"/' pyproject.toml && rm pyproject.toml.bak
-      - sed -i.bak 's/^__version__ = ".*"/__version__ = "{{.NEW_VERSION}}"/' mnemofy/__init__.py && rm mnemofy/__init__.py.bak
+      - sed -i.bak 's/^__version__ = ".*"/__version__ = "{{.NEW_VERSION}}"/' src/mnemofy/__init__.py && rm src/mnemofy/__init__.py.bak
       - echo "✓ Version bumped to {{.NEW_VERSION}}"
       - echo "Next steps"
       - echo "  1. Review changes with git diff"
@@ -106,7 +106,7 @@ tasks:
       VERSION:
         sh: grep '^version = ' pyproject.toml | cut -d'"' -f2
     cmds:
-      - git add pyproject.toml mnemofy/__init__.py
+      - git add pyproject.toml src/mnemofy/__init__.py
       - git commit -m "Bump version to {{.VERSION}}"
       - echo "✓ Version {{.VERSION}} committed"
       - echo "Next run task tag to create git tag"
@@ -134,7 +134,7 @@ tasks:
       - rm -rf .build_env
       - echo "✓ Published to TestPyPI"
       - echo "Test installation"
-      - echo "  pip install --index-url https://test.pypi.org/simple/ --no-deps mnemofy-cli"
+      - echo "  pip install --index-url https://test.pypi.org/simple/ --no-deps mnemofy"
 
   publish:
     desc: Build and upload to PyPI (production)
@@ -146,7 +146,7 @@ tasks:
       - .build_env/bin/python -m twine upload dist/*
       - rm -rf .build_env
       - echo "✓ Published to PyPI"
-      - echo "Install with pip install mnemofy-cli"
+      - echo "Install with pip install mnemofy"
 
   # Combined release workflow
   release-patch:
@@ -187,7 +187,7 @@ tasks:
           echo "Create GitHub release: {{.REPO_URL}}/releases/new?tag=v$VERSION"
         else
           echo "Release cancelled. Changes kept."
-          echo "To revert: git checkout pyproject.toml mnemofy/__init__.py"
+          echo "To revert: git checkout pyproject.toml src/mnemofy/__init__.py"
         fi
 
   # Testing tasks
@@ -258,7 +258,7 @@ tasks:
   info:
     desc: Show package information
     cmds:
-      - echo "Package mnemofy-cli"
+      - echo "Package mnemofy"
       - echo "Version {{.CURRENT_VERSION}}"
       - echo "Repository {{.REPO_URL}}"
       - echo ""
