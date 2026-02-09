@@ -3,4 +3,4 @@ mnemofy - Extract audio from media files, transcribe speech,
 and produce documented meeting notes.
 """
 
-__version__ = "0.6.0"
+__version__ = "0.6.1"
