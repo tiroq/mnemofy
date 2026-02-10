@@ -117,7 +117,7 @@ class TestExplicitModelOverride:
                     mock_transcriber_instance.transcribe.return_value = Mock(text="test")
                     mock_transcriber_instance.get_segments.return_value = []
                     
-                    with patch("mnemofy.cli.NoteGenerator"):
+                    with patch("mnemofy.cli.StructuredNotesGenerator"):
                         runner.invoke(
                             app,
                             ["transcribe", str(test_audio_file), "--model", "tiny"],
@@ -147,7 +147,7 @@ class TestExplicitModelOverride:
         for model_name in MODEL_SPECS.keys():
             with patch("mnemofy.cli.AudioExtractor") as mock_extractor:
                 with patch("mnemofy.cli.Transcriber") as mock_transcriber:
-                    with patch("mnemofy.cli.NoteGenerator"):
+                    with patch("mnemofy.cli.StructuredNotesGenerator"):
                         # Setup mocks
                         mock_extractor_instance = Mock()
                         mock_extractor.return_value = mock_extractor_instance
@@ -179,7 +179,7 @@ class TestAutoSelection:
                 with patch("mnemofy.cli.ModelMenu") as mock_menu:
                     with patch("mnemofy.cli.AudioExtractor") as mock_extractor:
                         with patch("mnemofy.cli.Transcriber") as mock_transcriber:
-                            with patch("mnemofy.cli.NoteGenerator"):
+                            with patch("mnemofy.cli.StructuredNotesGenerator"):
                                 # Setup mocks
                                 mock_resources = Mock(
                                     cpu_cores=4,
@@ -214,7 +214,7 @@ class TestAutoSelection:
                 with patch("mnemofy.cli.ModelMenu") as mock_menu:
                     with patch("mnemofy.cli.AudioExtractor") as mock_extractor:
                         with patch("mnemofy.cli.Transcriber") as mock_transcriber:
-                            with patch("mnemofy.cli.NoteGenerator"):
+                            with patch("mnemofy.cli.StructuredNotesGenerator"):
                                 # Setup mocks for non-TTY
                                 mock_resources = Mock(
                                     cpu_cores=4,
@@ -247,7 +247,7 @@ class TestAutoSelection:
         with patch("mnemofy.cli.detect_system_resources") as mock_detect:
             with patch("mnemofy.cli.AudioExtractor") as mock_extractor:
                 with patch("mnemofy.cli.Transcriber") as mock_transcriber:
-                    with patch("mnemofy.cli.NoteGenerator"):
+                    with patch("mnemofy.cli.StructuredNotesGenerator"):
                         # Detection fails
                         mock_detect.side_effect = RuntimeError("Detection failed")
                         
@@ -279,7 +279,7 @@ class TestNoGPUFlag:
             with patch("mnemofy.cli.is_interactive_environment") as mock_interactive:
                 with patch("mnemofy.cli.AudioExtractor") as mock_extractor:
                     with patch("mnemofy.cli.Transcriber") as mock_transcriber:
-                        with patch("mnemofy.cli.NoteGenerator"):
+                        with patch("mnemofy.cli.StructuredNotesGenerator"):
                             # Setup
                             mock_resources = Mock(
                                 cpu_cores=4,
@@ -320,7 +320,7 @@ class TestInteractiveSelection:
                 with patch("mnemofy.cli.ModelMenu") as mock_menu:
                     with patch("mnemofy.cli.AudioExtractor") as mock_extractor:
                         with patch("mnemofy.cli.Transcriber") as mock_transcriber:
-                            with patch("mnemofy.cli.NoteGenerator"):
+                            with patch("mnemofy.cli.StructuredNotesGenerator"):
                                 # Setup
                                 mock_resources = Mock(
                                     cpu_cores=4,
@@ -390,7 +390,7 @@ class TestFlagCombinations:
         with patch("mnemofy.cli.detect_system_resources") as mock_detect:
             with patch("mnemofy.cli.AudioExtractor") as mock_extractor:
                 with patch("mnemofy.cli.Transcriber") as mock_transcriber:
-                    with patch("mnemofy.cli.NoteGenerator"):
+                    with patch("mnemofy.cli.StructuredNotesGenerator"):
                         # Setup mocks
                         mock_extractor_instance = Mock()
                         mock_extractor.return_value = mock_extractor_instance
