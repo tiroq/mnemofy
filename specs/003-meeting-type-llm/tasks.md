@@ -116,47 +116,47 @@
 
 #### LLM Abstraction Layer
 
-- [ ] T044 [P] [US2] Create base LLM engine interface in src/mnemofy/llm/base.py (ABC with classify_meeting_type, generate_notes, health_check methods)
-- [ ] T045 [P] [US2] Implement OpenAI engine in src/mnemofy/llm/openai_engine.py (OpenAIEngine class implementing base interface)
-- [ ] T046 [P] [US2] Implement Ollama engine in src/mnemofy/llm/ollama_engine.py (OllamaEngine class implementing base interface)
-- [ ] T047 [US2] Implement LLM engine factory in src/mnemofy/llm/__init__.py (get_llm_engine with health check and fallback logic)
+- [X] T044 [P] [US2] Create base LLM engine interface in src/mnemofy/llm/base.py (ABC with classify_meeting_type, generate_notes, health_check methods)
+- [X] T045 [P] [US2] Implement OpenAI engine in src/mnemofy/llm/openai_engine.py (OpenAIEngine class implementing base interface)
+- [X] T046 [P] [US2] Implement Ollama engine in src/mnemofy/llm/ollama_engine.py (OllamaEngine class implementing base interface)
+- [X] T047 [US2] Implement LLM engine factory in src/mnemofy/llm/__init__.py (get_llm_engine with health check and fallback logic)
 
 #### High-Signal Segment Extraction
 
-- [ ] T048 [US2] Implement decision marker extraction in src/mnemofy/classifier.py (extract_high_signal_segments using regex patterns: "we'll", "let's", "agreed", "will do", "TODO", "should we", "what if")
-- [ ] T049 [US2] Implement sliding window context in src/mnemofy/classifier.py (±50 words around each marker)
-- [ ] T050 [US2] Implement segment deduplication in src/mnemofy/classifier.py (avoid overlapping segments, limit to top 5 by diversity)
+- [X] T048 [US2] Implement decision marker extraction in src/mnemofy/classifier.py (extract_high_signal_segments using regex patterns: "we'll", "let's", "agreed", "will do", "TODO", "should we", "what if")
+- [X] T049 [US2] Implement sliding window context in src/mnemofy/classifier.py (±50 words around each marker)
+- [X] T050 [US2] Implement segment deduplication in src/mnemofy/classifier.py (avoid overlapping segments, limit to top 5 by diversity)
 
 #### LLM Classification
 
-- [ ] T051 [US2] Implement LLM transcript window preparation in src/mnemofy/classifier.py (first 10-15 min + high-signal segments)
-- [ ] T052 [US2] Create LLM classification prompt in src/mnemofy/classifier.py (structured prompt requesting JSON: type, confidence, evidence, notes_focus)
-- [ ] T053 [US2] Implement LLM classifier in src/mnemofy/classifier.py (LLMClassifier class with detect_meeting_type method)
-- [ ] T054 [US2] Add JSON response validation in src/mnemofy/classifier.py (retry once with stricter prompt if invalid, fallback to heuristic)
+- [X] T051 [US2] Implement LLM transcript window preparation in src/mnemofy/classifier.py (first 10-15 min + high-signal segments)
+- [X] T052 [US2] Create LLM classification prompt in src/mnemofy/classifier.py (structured prompt requesting JSON: type, confidence, evidence, notes_focus)
+- [X] T053 [US2] Implement LLM classifier in src/mnemofy/classifier.py (LLMClassifier class with detect_meeting_type method)
+- [X] T054 [US2] Add JSON response validation in src/mnemofy/classifier.py (retry once with stricter prompt if invalid, fallback to heuristic)
 
 #### LLM Notes Generation
 
-- [ ] T055 [US2] Create LLM notes extraction prompt in src/mnemofy/notes.py (constraints: "Use ONLY transcript", "mark unclear with reason", "include timestamps")
-- [ ] T056 [US2] Implement LLM notes extractor in src/mnemofy/notes.py (LLMNotesExtractor class extracting decisions, actions, mentions with grounding)
-- [ ] T057 [US2] Implement grounding validator in src/mnemofy/notes.py (verify all GroundedItems have valid TranscriptReferences)
-- [ ] T058 [US2] Implement unclear status handler in src/mnemofy/notes.py (mark items as unclear with mandatory reason when LLM cannot trace to transcript)
-- [ ] T059 [US2] Add LLM timeout and retry logic in src/mnemofy/llm/base.py (max 2 retries with exponential backoff, timeout=30s)
+- [X] T055 [US2] Create LLM notes extraction prompt in src/mnemofy/notes.py (constraints: "Use ONLY transcript", "mark unclear with reason", "include timestamps")
+- [X] T056 [US2] Implement LLM notes extractor in src/mnemofy/notes.py (LLMNotesExtractor class extracting decisions, actions, mentions with grounding)
+- [X] T057 [US2] Implement grounding validator in src/mnemofy/notes.py (verify all GroundedItems have valid TranscriptReferences)
+- [X] T058 [US2] Implement unclear status handler in src/mnemofy/notes.py (mark items as unclear with mandatory reason when LLM cannot trace to transcript)
+- [X] T059 [US2] Add LLM timeout and retry logic in src/mnemofy/llm/base.py (max 2 retries with exponential backoff, timeout=30s)
 
 #### CLI Integration
 
-- [ ] T060 [US2] Add --llm flag to src/mnemofy/cli.py (on|off, enables LLM for both classification and notes)
-- [ ] T061 [P] [US2] Add --llm-engine flag to src/mnemofy/cli.py (openai|ollama|openai_compat)
-- [ ] T062 [P] [US2] Add --llm-model flag to src/mnemofy/cli.py (model name override)
-- [ ] T063 [US2] Integrate LLM fallback in src/mnemofy/cli.py (catch LLM failures, display warning, fall back to heuristic/basic mode within 30s)
-- [ ] T064 [US2] Add engine info to console output in src/mnemofy/cli.py (display: engine=openai, model=gpt-4o-mini, mode=notes|classify|both)
+- [X] T060 [US2] Add --llm flag to src/mnemofy/cli.py (on|off, enables LLM for both classification and notes)
+- [X] T061 [P] [US2] Add --llm-engine flag to src/mnemofy/cli.py (openai|ollama|openai_compat)
+- [X] T062 [P] [US2] Add --llm-model flag to src/mnemofy/cli.py (model name override)
+- [X] T063 [US2] Integrate LLM fallback in src/mnemofy/cli.py (catch LLM failures, display warning, fall back to heuristic/basic mode within 30s)
+- [X] T064 [US2] Add engine info to console output in src/mnemofy/cli.py (display: engine=openai, model=gpt-4o-mini, mode=notes|classify|both)
 
 #### Testing for User Story 2
 
-- [ ] T065 [P] [US2] Add LLM engine contract tests in tests/test_llm_engines.py (mock OpenAI/Ollama APIs, test interface compliance)
-- [ ] T066 [P] [US2] Add high-signal extraction tests in tests/test_classifier.py (verify decision markers detected, segments extracted)
-- [ ] T067 [P] [US2] Add LLM notes grounding tests in tests/test_notes_enhanced.py (verify all items have timestamps, unclear items have reasons)
-- [ ] T068 [P] [US2] Add fallback behavior tests in tests/test_llm_engines.py (simulate LLM failures, verify graceful degradation)
-- [ ] T069 [US2] Update CLI integration tests in tests/test_cli_integration.py (test --llm flag, engine info display)
+- [X] T065 [P] [US2] Add LLM engine contract tests in tests/test_llm_engines.py (mock OpenAI/Ollama APIs, test interface compliance)
+- [X] T066 [P] [US2] Add high-signal extraction tests in tests/test_classifier.py (verify decision markers detected, segments extracted)
+- [X] T067 [P] [US2] Add LLM notes grounding tests in tests/test_notes_enhanced.py (verify all items have timestamps, unclear items have reasons)
+- [X] T068 [P] [US2] Add fallback behavior tests in tests/test_llm_engines.py (simulate LLM failures, verify graceful degradation)
+- [X] T069 [US2] Update CLI integration tests in tests/test_cli_integration.py (test --llm flag, engine info display)
 
 **Checkpoint**: User Story 2 complete - LLM-enhanced notes work when configured, gracefully fall back when not
 
@@ -174,37 +174,37 @@
 
 #### Configuration Loading
 
-- [ ] T070 [US3] Implement TOML config loader in src/mnemofy/llm/config.py (load_llm_config from ~/.config/mnemofy/config.toml)
-- [ ] T071 [US3] Implement env var override in src/mnemofy/llm/config.py (MNEMOFY_LLM_* variables override file config)
-- [ ] T072 [US3] Implement precedence chain in src/mnemofy/llm/config.py (CLI > env vars > file > defaults)
-- [ ] T073 [US3] Add API key security validation in src/mnemofy/llm/config.py (raise error if API key found in TOML file, require env var)
-- [ ] T074 [US3] Implement default model selection in src/mnemofy/llm/config.py (gpt-4o-mini for OpenAI, llama3.2:3b for Ollama)
+- [X] T070 [US3] Implement TOML config loader in src/mnemofy/llm/config.py (load_llm_config from ~/.config/mnemofy/config.toml)
+- [X] T071 [US3] Implement env var override in src/mnemofy/llm/config.py (MNEMOFY_LLM_* variables override file config)
+- [X] T072 [US3] Implement precedence chain in src/mnemofy/llm/config.py (CLI > env vars > file > defaults)
+- [X] T073 [US3] Add API key security validation in src/mnemofy/llm/config.py (raise error if API key found in TOML file, require env var)
+- [X] T074 [US3] Implement default model selection in src/mnemofy/llm/config.py (gpt-4o-mini for OpenAI, llama3.2:3b for Ollama)
 
 #### Configuration Schema
 
-- [ ] T075 [P] [US3] Add config validation in src/mnemofy/llm/config.py (engine_type valid, timeout > 0, temperature 0-2, model non-empty)
-- [ ] T076 [P] [US3] Add TOML syntax error handling in src/mnemofy/llm/config.py (catch parse errors, display line number, use defaults)
-- [ ] T077 [US3] Integrate config loader in src/mnemofy/llm/__init__.py (use config in engine factory)
+- [X] T075 [P] [US3] Add config validation in src/mnemofy/llm/config.py (engine_type valid, timeout > 0, temperature 0-2, model non-empty)
+- [X] T076 [P] [US3] Add TOML syntax error handling in src/mnemofy/llm/config.py (catch parse errors, display line number, use defaults)
+- [X] T077 [US3] Integrate config loader in src/mnemofy/llm/__init__.py (use config in engine factory)
 
 #### CLI Integration
 
-- [ ] T078 [P] [US3] Add --llm-base-url flag to src/mnemofy/cli.py (custom API endpoint)
-- [ ] T079 [P] [US3] Add --llm-timeout flag to src/mnemofy/cli.py (request timeout in seconds)
-- [ ] T080 [P] [US3] Add --llm-retries flag to src/mnemofy/cli.py (max retry attempts)
-- [ ] T081 [US3] Update CLI config precedence in src/mnemofy/cli.py (apply CLI flag overrides to loaded config)
+- [X] T078 [P] [US3] Add --llm-base-url flag to src/mnemofy/cli.py (custom API endpoint)
+- [X] T079 [P] [US3] Add --llm-timeout flag to src/mnemofy/cli.py (request timeout in seconds)
+- [X] T080 [P] [US3] Add --llm-retries flag to src/mnemofy/cli.py (max retry attempts)
+- [X] T081 [US3] Update CLI config precedence in src/mnemofy/cli.py (apply CLI flag overrides to loaded config)
 
 #### Error Handling & Guidance
 
-- [ ] T082 [US3] Add missing credentials handler in src/mnemofy/cli.py (detect missing API key, display setup instructions with config file path and env var names)
-- [ ] T083 [US3] Add Ollama model check in src/mnemofy/llm/ollama_engine.py (detect unpulled model, display "ollama pull <model>" instruction)
-- [ ] T084 [US3] Add engine reachability check in src/mnemofy/llm/base.py (display actionable error for network failures)
+- [X] T082 [US3] Add missing credentials handler in src/mnemofy/cli.py (detect missing API key, display setup instructions with config file path and env var names)
+- [X] T083 [US3] Add Ollama model check in src/mnemofy/llm/ollama_engine.py (detect unpulled model, display "ollama pull <model>" instruction)
+- [X] T084 [US3] Add engine reachability check in src/mnemofy/llm/base.py (display actionable error for network failures)
 
 #### Testing for User Story 3
 
-- [ ] T085 [P] [US3] Add config loading tests in tests/test_llm_config.py (test precedence: CLI > env > file > defaults)
-- [ ] T086 [P] [US3] Add API key security tests in tests/test_llm_config.py (verify error when key found in TOML)
-- [ ] T087 [P] [US3] Add env var override tests in tests/test_llm_config.py (verify MNEMOFY_LLM_* variables work)
-- [ ] T088 [P] [US3] Add TOML error handling tests in tests/test_llm_config.py (test invalid syntax, missing file, permissions)
+- [X] T085 [P] [US3] Add config loading tests in tests/test_llm_config.py (test precedence: CLI > env > file > defaults)
+- [X] T086 [P] [US3] Add API key security tests in tests/test_llm_config.py (verify error when key found in TOML)
+- [X] T087 [P] [US3] Add env var override tests in tests/test_llm_config.py (verify MNEMOFY_LLM_* variables work)
+- [X] T088 [P] [US3] Add TOML error handling tests in tests/test_llm_config.py (test invalid syntax, missing file, permissions)
 - [ ] T089 [US3] Update CLI tests in tests/test_cli_integration.py (test all --llm-* flags)
 
 **Checkpoint**: User Story 3 complete - users can configure and switch between LLM providers easily
