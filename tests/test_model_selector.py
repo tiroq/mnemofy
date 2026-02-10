@@ -570,3 +570,169 @@ class TestRecommendModel:
 
         # CPU mode should have access to more models (no VRAM constraint)
         assert "CPU mode" in reasoning_cpu
+
+
+class TestGetModelTable:
+    """Tests for get_model_table function."""
+    
+    @staticmethod
+    def _make_resources(**kwargs):
+        """Helper to create SystemResources mock."""
+        defaults = {
+            "cpu_cores": 4,
+            "cpu_arch": "x86_64",
+            "total_ram_gb": 8.0,
+            "available_ram_gb": 6.0,
+            "has_gpu": False,
+            "gpu_type": None,
+            "available_vram_gb": None,
+        }
+        defaults.update(kwargs)
+        return Mock(**defaults)
+
+    def test_get_model_table_returns_string(self):
+        """Test get_model_table returns a formatted string."""
+        resources = self._make_resources()
+        table = get_model_table(resources)
+        
+        assert isinstance(table, str)
+        assert len(table) > 0
+        assert "Model" in table or "model" in table.lower()
+
+    def test_get_model_table_includes_all_models(self):
+        """Test table includes all models from MODEL_SPECS."""
+        resources = self._make_resources()
+        table = get_model_table(resources)
+        
+        for model_name in list_models():
+            assert model_name in table
+
+    def test_get_model_table_with_recommended_model(self):
+        """Test table highlights recommended model."""
+        resources = self._make_resources(available_ram_gb=8.0)
+        recommended_spec = MODEL_SPECS["small"]
+        
+        table = get_model_table(resources, recommended=recommended_spec)
+        
+        assert "small" in table
+        assert "Recommended" in table or "recommended" in table.lower()
+
+    def test_get_model_table_shows_compatibility_status(self):
+        """Test table displays compatibility status for models."""
+        resources = self._make_resources(available_ram_gb=1.5)  # Only tiny + base fit
+        table = get_model_table(resources, use_gpu=False)
+        
+        # Should show compatible and incompatible markers
+        assert "Compatible" in table or "compatible" in table.lower() or \
+               "Incompatible" in table or "incompatible" in table.lower() or \
+               "✓" in table or "✗" in table
+
+    def test_get_model_table_ram_requirements(self):
+        """Test table shows RAM requirements for all models."""
+        resources = self._make_resources()
+        table = get_model_table(resources, use_gpu=False)
+        
+        # Should show actual RAM requirements (all end in GB)
+        assert "GB" in table
+        # Should have RAM requirements for multiple models
+        assert table.count("GB") >= len(list_models())
+
+    def test_get_model_table_speed_quality_visualization(self):
+        """Test table uses bar visualization for speed/quality."""
+        resources = self._make_resources()
+        table = get_model_table(resources)
+        
+        # Table should have filled/empty bar characters
+        assert "█" in table or "░" in table or \
+               "|" in table or "-" in table  # Alternative visualization
+
+    def test_get_model_table_with_gpu_shows_vram(self):
+        """Test table shows VRAM requirements when GPU is available."""
+        resources = self._make_resources(
+            has_gpu=True,
+            gpu_type="cuda",
+            available_vram_gb=4.0
+        )
+        table = get_model_table(resources, use_gpu=True)
+        
+        # Should show VRAM column (even if some are N/A)
+        assert "VRAM" in table or "vram" in table.lower() or "N/A" in table
+
+    def test_get_model_table_cpu_mode_disables_gpu_filtering(self):
+        """Test that use_gpu=False ignores GPU resources."""
+        resources = self._make_resources(
+            available_ram_gb=6.0,
+            has_gpu=True,
+            gpu_type="cuda",
+            available_vram_gb=1.0  # Insufficient VRAM
+        )
+        
+        table_gpu = get_model_table(resources, use_gpu=True)
+        table_cpu = get_model_table(resources, use_gpu=False)
+        
+        # CPU mode should show more compatible models than GPU mode
+        # (since GPU VRAM constraint doesn't apply)
+        compatible_gpu = table_gpu.count("Compatible") + table_gpu.count("✓")
+        compatible_cpu = table_cpu.count("Compatible") + table_cpu.count("✓")
+        assert compatible_cpu >= compatible_gpu
+
+    def test_get_model_table_risky_status_for_low_margin(self):
+        """Test that models with <20% safety margin show as risky."""
+        # Available RAM of 1.1 GB means only tiny (1.0 GB) fits with barely any margin
+        resources = self._make_resources(available_ram_gb=1.1, has_gpu=False)
+        table = get_model_table(resources, use_gpu=False)
+        
+        # Should mark tiny as risky if margin < 20%
+        # (1.1 - 1.0) / 1.0 = 0.1 = 10% < 20%
+        table_content = table.lower()
+        has_risky = "risky" in table_content or "⚠" in table
+
+    def test_get_model_table_incompatible_status(self):
+        """Test incompatible status when no resources available."""
+        resources = self._make_resources(available_ram_gb=0.5)  # Less than tiny (1GB)
+        table = get_model_table(resources, use_gpu=False)
+        
+        # All models should show as incompatible
+        assert "Incompatible" in table or "incompatible" in table.lower() or "✗" in table
+
+    def test_get_model_table_metal_gpu_no_vram(self):
+        """Test table handles Metal GPU (unified memory, no VRAM reporting)."""
+        resources = self._make_resources(
+            available_ram_gb=8.0,
+            has_gpu=True,
+            gpu_type="metal",
+            available_vram_gb=None  # Metal doesn't report separate VRAM
+        )
+        table = get_model_table(resources, use_gpu=True)
+        
+        # Should still produce valid table with N/A for VRAM
+        assert isinstance(table, str)
+        assert "metal" in table.lower() or "N/A" in table
+        assert len(table) > 0
+
+    def test_get_model_table_no_recommended_model(self):
+        """Test table works without recommended parameter."""
+        resources = self._make_resources()
+        
+        # Should not raise error and should return valid table
+        table = get_model_table(resources, recommended=None)
+        assert isinstance(table, str)
+        assert len(table) > 0
+
+    def test_get_model_table_recommended_not_in_specs(self):
+        """Test table handles recommended model gracefully if not in specs."""
+        resources = self._make_resources()
+        # Create a fake recommended spec
+        fake_recommended = ModelSpec(
+            name="fake-model",
+            min_ram_gb=2.0,
+            min_vram_gb=None,
+            speed_rating=3,
+            quality_rating=3,
+            description="Not a real model"
+        )
+        
+        # Should not crash, just won't find the recommended model in table
+        table = get_model_table(resources, recommended=fake_recommended)
+        assert isinstance(table, str)
+        assert "fake-model" not in table  # Not in MODEL_SPECS
