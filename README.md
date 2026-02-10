@@ -59,15 +59,57 @@ mnemofy transcribe meeting.mp4
 
 This will create `meeting_notes.md` in the same directory.
 
+### Automatic Model Selection
+
+mnemofy **automatically detects your system resources** (CPU, RAM, GPU) and selects the best Whisper model that fits in your available memory:
+
+- **Tiny** (1.0 GB): Fastest, suitable for low-RAM systems
+- **Base** (1.5 GB): Good balance of speed and accuracy
+- **Small** (2.5 GB): Better accuracy, requires 8GB+ RAM
+- **Medium** (5.0 GB): High accuracy, requires 16GB+ RAM  
+- **Large-v3** (10.0 GB): Best accuracy, requires 32GB+ RAM with GPU
+
+**Default behavior** (recommended):
+```bash
+mnemofy transcribe meeting.mp4
+# ✓ Detects your system (RAM, GPU, CPU)
+# ✓ Shows interactive menu (if in terminal)
+# ✓ You select desired model with ↑↓ arrow keys
+# ✓ Falls back to auto-selection on headless systems
+```
+
+**Skip auto-detection** with explicit model:
+```bash
+mnemofy transcribe meeting.mp4 --model tiny
+# ✓ Uses tiny model directly (no detection/menu)
+```
+
+**Headless mode** (CI/automated environments):
+```bash
+mnemofy transcribe meeting.mp4 --auto
+# ✓ Detects resources
+# ✓ Auto-selects best model
+# ✓ No interactive menu (suitable for cron, CI/CD)
+```
+
+**CPU-only mode** (disable GPU):
+```bash
+mnemofy transcribe meeting.mp4 --no-gpu
+# ✓ Forces CPU-based transcription
+# ✓ Useful if GPU causes issues
+```
+
+**View available models**:
+```bash
+mnemofy transcribe --list-models
+# Shows model comparison table with your system specs
+```
+
 ### Advanced Options
 
 ```bash
 # Specify output file
 mnemofy transcribe meeting.mp4 -o notes/meeting_summary.md
-
-# Use a different Whisper model (tiny, base, small, medium, large)
-# Larger models are more accurate but slower
-mnemofy transcribe meeting.mp4 -m small
 
 # Set a custom title for the notes
 mnemofy transcribe meeting.mp4 -t "Team Sprint Planning"
@@ -178,6 +220,47 @@ The default `base` model offers a good balance of speed and accuracy. Use `tiny`
   - pydantic
 
 ## Troubleshooting
+
+### Model Selection Issues
+
+#### "No Whisper model fits in available RAM"
+
+This means even the smallest model (tiny, 1.5 GB) requires more memory than available.
+
+**Solutions**:
+1. Close other applications to free memory
+2. Use explicit tiny model: `mnemofy transcribe file.mp4 --model tiny`
+3. Process shorter audio files
+4. Upgrade system RAM
+5. Use a machine with more RAM (cloud VM option)
+
+#### CPU/GPU Not Detected
+
+If model selection falls back to "base" when you expect GPU acceleration:
+
+1. Check GPU availability:
+   ```bash
+   mnemofy transcribe --list-models
+   # Look for "VRAM" row - should show your GPU memory if available
+   ```
+
+2. Verify GPU drivers (NVIDIA/Metal/ROCm) are installed:
+   - **NVIDIA**: `nvidia-smi` should work
+   - **macOS (Metal)**: Currently supported on macOS with Apple Silicon (ARM64); Intel Macs will fall back to CPU
+   - **AMD (ROCm)**: Not yet implemented (planned for future release)
+
+3. Force CPU mode if GPU causes issues:
+   ```bash
+   mnemofy transcribe file.mp4 --no-gpu
+   ```
+
+#### Interactive Menu Not Showing
+
+If you expect the interactive menu but it skips to auto-selection:
+
+- Menu requires a terminal (TTY), not suitable for pipes/redirects
+- Use `--auto` explicitly for headless environments
+- In CI/cron: model selection works automatically with `--auto`
 
 ### OpenMP Library Conflict (macOS)
 
