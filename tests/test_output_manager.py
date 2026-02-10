@@ -1,7 +1,7 @@
 """Tests for OutputManager path management."""
 
+import os
 import pytest
-import tempfile
 from pathlib import Path
 
 from mnemofy.output_manager import OutputManager
@@ -134,7 +134,7 @@ class TestOutputManagerOutdirCreation:
         outdir = tmp_path / "new_dir"
         
         assert not outdir.exists()
-        manager = OutputManager(input_file, outdir=outdir)
+        OutputManager(input_file, outdir=outdir)
         assert outdir.exists()
     
     def test_creates_nested_outdir(self, tmp_path):
@@ -144,7 +144,7 @@ class TestOutputManagerOutdirCreation:
         outdir = tmp_path / "a" / "b" / "c"
         
         assert not outdir.exists()
-        manager = OutputManager(input_file, outdir=outdir)
+        OutputManager(input_file, outdir=outdir)
         assert outdir.exists()
     
     def test_outdir_already_exists(self, tmp_path):

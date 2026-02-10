@@ -15,7 +15,7 @@ from mnemofy.model_selector import (
     list_models,
     recommend_model,
 )
-from mnemofy.notes import NoteGenerator, StructuredNotesGenerator
+from mnemofy.notes import StructuredNotesGenerator
 from mnemofy.output_manager import OutputManager
 from mnemofy.resources import detect_system_resources
 from mnemofy.transcriber import Transcriber
@@ -227,14 +227,18 @@ def transcribe(
             task = progress.add_task("Generating formatted transcripts...", total=None)
 
             transcriber = Transcriber(model_name=selected_model)
-            transcription = transcriber.transcribe(audio_file)
+            transcription = transcriber.transcribe(audio_file, language=lang)
             segments = transcriber.get_segments(transcription)
+            
+            # Determine effective language: prefer explicit --lang, then detected, then fallback
+            detected_language = transcription.get("language") if transcription else None
+            effective_language = lang or detected_language or "en"
             
             # Prepare metadata
             metadata = {
                 "engine": "faster-whisper",
                 "model": selected_model,
-                "language": lang or "en",
+                "language": effective_language,
                 "duration": sum(s["end"] - s["start"] for s in segments),
             }
             

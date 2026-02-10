@@ -93,6 +93,10 @@ class OutputManager:
                 raise PermissionError(f"Cannot create output directory: {self._outdir}") from e
             except OSError as e:
                 raise ValueError(f"Cannot create output directory: {self._outdir}") from e
+            
+            # Validate writability after creation
+            if not os.access(self._outdir, os.W_OK):
+                raise PermissionError(f"Output directory is not writable after creation: {self._outdir}")
     
     def get_audio_path(self) -> Path:
         """Get path for extracted audio file.
