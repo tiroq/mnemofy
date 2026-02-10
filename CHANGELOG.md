@@ -40,17 +40,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Factory functions for easy creation
   - Extensible design for future enhancements
 
+**Rerun Handling & Model Comparison**
+
+- **`--model-suffix` flag**:
+  - Include model name in transcript filenames
+  - Prevents overwrites when comparing different models
+  - Pattern: `meeting.base.transcript.json`, `meeting.small.transcript.json`
+  - Enables side-by-side quality comparison
+- **Run history tracking** (`*.run-history.jsonl`):
+  - Automatic append-only log of all processing runs
+  - Records: timestamp, model, duration, word count, config
+  - JSONL format (one JSON object per line)
+  - Tracks runs regardless of --model-suffix usage
+  - Never overwrites - maintains complete audit trail
+- **Model comparison script** (`examples/compare_model_runs.py`):
+  - Analyze run history to compare model performance
+  - Display comparison tables with metrics
+  - Identify fastest and best quality models
+  - Recommend balanced options
+- **Model-suffixed metadata**:
+  - When using --model-suffix, metadata and manifest files also include model name
+  - Preserves complete context for each model run
+
 ### Changed
 
 - **CLI output**: Now displays metadata file paths after processing
+- **CLI output**: Shows run history file path
+- **CLI output**: Indicates when model-suffix mode is enabled
 - **Transcript JSON**: Auto-enriched with additional metadata fields
 - **OutputManager**: Added methods for metadata paths and model-aware naming
+- **File overwrites**: Default behavior still overwrites; use --model-suffix to preserve
 
 ### Documentation
 
 - Added `docs/MODEL_AWARE_ARTIFACTS.md`: Comprehensive guide to metadata features
+- Added `docs/RERUN_HANDLING.md`: Complete guide to handling reruns and model comparison
 - Added `ARTIFACTS_IMPLEMENTATION.md`: Implementation details and API examples
 - Added `examples/analyze_metadata.py`: Example script for metadata analysis
+- Added `examples/compare_model_runs.py`: Script for comparing multiple model runs
 - Updated README with metadata features overview
 
 ## [1.0.0] - 2026-02-10
