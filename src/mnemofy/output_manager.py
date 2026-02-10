@@ -174,6 +174,85 @@ class OutputManager:
         """
         return self._outdir / f"{self._basename}.changes.md"
     
+    def get_metadata_path(self) -> Path:
+        """Get path for processing metadata file.
+        
+        Returns:
+            Path: <outdir>/<basename>.metadata.json
+        
+        Notes:
+            Metadata file documents the entire processing pipeline:
+            - Model(s) used (ASR and LLM)
+            - Processing timestamps
+            - Language detection
+            - Artifact generation details
+            - Processing parameters and flags
+            JSON format (.metadata.json).
+        
+        Examples:
+            manager = OutputManager("meeting.mp4", outdir="/out")
+            path = manager.get_metadata_path()
+            # Returns: Path('/out/meeting.metadata.json')
+        """
+        return self._outdir / f"{self._basename}.metadata.json"
+    
+    def get_artifacts_manifest_path(self) -> Path:
+        """Get path for artifacts manifest file.
+        
+        Returns:
+            Path: <outdir>/<basename>.artifacts.json
+        
+        Notes:
+            Manifest indexes all generated artifacts with their properties:
+            - Paths to all output files
+            - File types and formats
+            - Model names used for each artifact
+            - Generation timestamps
+            - Schema version and format info
+            JSON format (.artifacts.json).
+        
+        Examples:
+            manager = OutputManager("meeting.mp4", outdir="/out")
+            path = manager.get_artifacts_manifest_path()
+            # Returns: Path('/out/meeting.artifacts.json')
+        """
+        return self._outdir / f"{self._basename}.artifacts.json"
+    
+    def get_model_aware_transcript_paths(
+        self,
+        model_name: Optional[str] = None
+    ) -> Dict[str, Path]:
+        """Get paths for transcript formats with optional model name included.
+        
+        Args:
+            model_name: If provided, model name is included in filenames.
+                       If None, uses standard transcript paths without model name.
+        
+        Returns:
+            Dict with keys 'txt', 'srt', 'json' mapping to Path objects.
+            
+            Examples:
+                # Without model name (standard)
+                paths = manager.get_model_aware_transcript_paths()
+                # {'txt': Path('.../meeting.transcript.txt')}
+                
+                # With model name
+                paths = manager.get_model_aware_transcript_paths('base')
+                # {'txt': Path('.../meeting.base.transcript.txt')}
+        
+        Notes:
+            When model_name is None, behaves identically to get_transcript_paths().
+            Model name is inserted after basename: {basename}.{model}.transcript.{ext}
+        """
+        if model_name is None:
+            return self.get_transcript_paths()
+        
+        return {
+            'txt': self._outdir / f"{self._basename}.{model_name}.transcript.txt",
+            'srt': self._outdir / f"{self._basename}.{model_name}.transcript.srt",
+            'json': self._outdir / f"{self._basename}.{model_name}.transcript.json",
+        }
+    
     @property
     def outdir(self) -> Path:
         """Get the resolved output directory (Path object).
