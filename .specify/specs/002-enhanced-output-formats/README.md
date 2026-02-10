@@ -58,8 +58,8 @@ This feature implements comprehensive output management for mnemofy, transformin
 ## Key Technical Decisions
 
 **Audio Extraction**: 
-- Always save `.mnemofy.wav` next to original video (regardless of --outdir)
-- Ensures predictable location for reuse
+- Save `.mnemofy.wav` to --outdir with other outputs (default: current dir)
+- Keeps all artifacts together in one location
 
 **Format Consistency**:
 - All three transcript formats use identical segment boundaries
@@ -69,6 +69,12 @@ This feature implements comprehensive output management for mnemofy, transformin
 - Basic mode: 100% deterministic, zero hallucination
 - All extracted items MUST cite timestamps
 - If uncertain, mark as "unclear" with timestamp
+- Minimum 30 seconds of transcript required for structured notes extraction
+
+**Error Handling**:
+- Best-effort approach: if one format fails, complete others
+- Log warnings for failed formats, continue processing
+- Ensures partial output rather than complete failure
 
 **Backward Compatibility**:
 - All new flags are optional

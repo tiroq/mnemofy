@@ -39,7 +39,7 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Description**: Implement all path generation methods in OutputManager.
 
 **Acceptance Criteria**:
-- [ ] Implement `get_audio_path()` → returns Path next to input (`<basename>.mnemofy.wav`)
+- [ ] Implement `get_audio_path()` → returns Path in outdir (`<basename>.mnemofy.wav`)
 - [ ] Implement `get_transcript_paths()` → returns dict with txt/srt/json keys (in outdir)
 - [ ] Implement `get_notes_path()` → returns Path for notes.md (in outdir)
 - [ ] Handle both relative and absolute outdir paths correctly
@@ -83,7 +83,7 @@ This document breaks down the implementation into 54 concrete tasks organized by
 
 **Acceptance Criteria**:
 - [ ] Create `tests/test_output_manager.py`
-- [ ] Test audio path (next to input, regardless of outdir)
+- [ ] Test audio path (in outdir)
 - [ ] Test transcript paths (in outdir)
 - [ ] Test notes path (in outdir)
 - [ ] Test with outdir=None (default to input parent)
@@ -110,10 +110,10 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Acceptance Criteria**:
 - [ ] Update `AudioExtractor` to accept `output_path` parameter
 - [ ] Use `output_manager.get_audio_path()` in CLI
-- [ ] Ensure audio always saved next to input (regardless of --outdir)
+- [ ] Ensure audio saved to outdir location from OutputManager
 - [ ] Log extracted audio location clearly
 - [ ] Update existing audio extraction tests
-- [ ] Test that video → wav next to input works
+- [ ] Test that video → wav to outdir works
 
 **Dependencies**: T-002, T-003
 
@@ -181,7 +181,7 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Acceptance Criteria**:
 - [ ] Implement `to_srt(segments: list) -> str` static method
 - [ ] Format per spec: sequence number, timing line, text, blank line
-- [ ] Timing format: `HH:MM:SS,mmm --> HH:MM:SS,mmm`
+- [ ] Timing format: `HH:MM:SS,mmm --> HH:MM:SS,mmm` (millisecond precision)
 - [ ] Use comma for milliseconds (not period)
 - [ ] Sequential numbering starting at 1
 - [ ] Handle multi-line text in segments
@@ -209,7 +209,8 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Acceptance Criteria**:
 - [ ] Implement `to_json(segments: list, metadata: dict) -> str` static method
 - [ ] JSON structure: `{"metadata": {...}, "segments": [...]}`
-- [ ] Metadata fields: engine, model, language, duration, timestamp
+- [ ] Metadata fields: engine, model, language, duration, timestamp, schema_version
+- [ ] Include `schema_version: '1.0'` for future compatibility
 - [ ] Segment fields: start, end, text, confidence (if available)
 - [ ] Valid JSON (parseable with json.loads)
 - [ ] Pretty-printed with indent=2
@@ -347,6 +348,7 @@ This document breaks down the implementation into 54 concrete tasks organized by
 
 **Acceptance Criteria**:
 - [ ] Implement `_extract_topics(segments: list) -> list[dict]`
+- [ ] Check minimum transcript length (30 seconds) before extraction
 - [ ] Detect topic changes (basic: time buckets + keyword shifts)
 - [ ] Return topics with start/end timestamps
 - [ ] Format: `- **[MM:SS–MM:SS]** Topic description`
@@ -629,7 +631,8 @@ This document breaks down the implementation into 54 concrete tasks organized by
 - [ ] Call TranscriptFormatter.to_json()
 - [ ] Write each format to appropriate path
 - [ ] Collect metadata (model, language, duration, timestamp)
-- [ ] Handle write errors gracefully
+- [ ] Handle write errors gracefully (best-effort: skip failed, complete others)
+- [ ] Log warnings for any failed formats
 - [ ] Write 5+ tests
 
 **Dependencies**: T-007, T-008, T-009, T-026

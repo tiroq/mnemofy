@@ -6,6 +6,32 @@
 
 ---
 
+## Clarifications Applied
+
+The following decisions were made during specification review:
+
+1. **Audio Location**: `.mnemofy.wav` saves to `--outdir` with other outputs (not next to input)
+    - Keeps all artifacts together in one location
+    - Default: current directory
+
+2. **Error Handling**: Best-effort approach for format failures
+    - If one format fails, complete others
+    - Log warnings, continue processing
+    - Ensures partial output vs complete failure
+
+3. **Notes Minimum**: 30-second transcript minimum for structured notes
+    - Skip notes generation for very short clips
+    - Ensures sufficient content for meaningful extraction
+
+4. **SRT Timing**: Millisecond precision (HH:MM:SS,mmm)
+    - Standard SubRip specification compliance
+
+5. **JSON Versioning**: Include `schema_version: '1.0'` field
+    - Enables future format evolution
+    - Backward compatibility tracking
+
+---
+
 ## Planning Summary
 
 This feature implements the complete output management system from the detailed specification, adding multi-format transcript generation, automatic audio extraction, and structured notes with timestamps.
@@ -15,7 +41,7 @@ This feature implements the complete output management system from the detailed 
 2. **Tri-Format Transcripts**: TXT, SRT, JSON formatters
 3. **Structured Notes**: 7-section MD with timestamp citations
 4. **CLI Enhancements**: --outdir, --lang, --notes flags
-5. **Audio Extraction**: Auto-extract from video, save next to input
+5. **Audio Extraction**: Auto-extract from video, save to --outdir
 
 ---
 
@@ -46,7 +72,7 @@ graph TD
     A[Input: video/audio] --> B{Is Video?}
     B -->|Yes| C[Extract Audio]
     B -->|No| E[Normalize Audio]
-    C --> D[Save .mnemofy.wav<br/>next to input]
+    C --> D[Save .mnemofy.wav<br/>to --outdir]
     D --> E
     E --> F[Transcribe with<br/>faster-whisper]
     F --> G[Segment List]
@@ -70,14 +96,14 @@ graph TD
 **Goals**:
 - Create `OutputManager` class for path management
 - Handle --outdir flag logic
-- Implement audio save-next-to-input behavior
+- Implement audio path management (save to outdir)
 
 **Tasks**:
 - T-001: Create `output_manager.py` module
 - T-002: Implement path generation methods
 - T-003: Add --outdir CLI flag
 - T-004: Write unit tests for path logic
-- T-005: Update audio extractor to use OutputManager
+- T-005: Update audio extractor to save .mnemofy.wav to outdir
 
 **Deliverable**: Centralized output path management working
 
@@ -94,8 +120,8 @@ graph TD
 **Tasks**:
 - T-006: Create `formatters.py` module structure
 - T-007: Implement TXT formatter (`[HH:MM:SS–HH:MM:SS] text`)
-- T-008: Implement SRT formatter (sequence, timing, text)
-- T-009: Implement JSON formatter (segments + metadata)
+- T-008: Implement SRT formatter (millisecond precision: HH:MM:SS,mmm)
+- T-009: Implement JSON formatter (segments + metadata + schema_version)
 - T-010: Add format validation utilities
 - T-011: Write comprehensive formatter tests (30+ tests)
 - T-012: Validate SRT in subtitle editors
@@ -116,7 +142,7 @@ graph TD
 **Tasks**:
 - T-013: Refactor `NoteGenerator` to `StructuredNotesGenerator`
 - T-014: Implement metadata section generator
-- T-015: Implement topic extraction with time ranges
+- T-015: Implement topic extraction (30s minimum transcript length check)
 - T-016: Implement decision extraction with timestamps
 - T-017: Implement action item extraction (owner + timestamp)
 - T-018: Implement concrete mentions extraction (names, URLs, numbers)
@@ -142,7 +168,7 @@ graph TD
 - T-024: Add --lang flag to CLI
 - T-025: Add --notes flag to CLI (basic|llm)
 - T-026: Integrate OutputManager in transcribe command
-- T-027: Call all three formatters after transcription
+- T-027: Call all formatters with error handling (best-effort approach)
 - T-028: Integrate enhanced notes generator
 - T-029: Add format summary logging
 - T-030: Write CLI integration tests (10+ tests)

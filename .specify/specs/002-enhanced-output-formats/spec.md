@@ -18,6 +18,8 @@
 - Q: What timing precision should SRT format use? → A: Milliseconds (HH:MM:SS,mmm) - standard SubRip specification
 - Q: Should JSON transcript include schema version field? → A: Include 'schema_version': '1.0' field for future compatibility
 
+**See [CLARIFICATIONS.md](./CLARIFICATIONS.md) for detailed rationale and impact analysis.**
+
 ---
 
 ## Overview
