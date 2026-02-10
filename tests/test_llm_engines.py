@@ -7,7 +7,7 @@ import httpx
 
 from mnemofy.classifier import ClassificationResult, MeetingType, GroundedItem
 from mnemofy.llm import get_llm_engine
-from mnemofy.llm.base import BaseLLMEngine, LLMError
+from mnemofy.llm.base import LLMError
 from mnemofy.llm.openai_engine import OpenAIEngine
 from mnemofy.llm.ollama_engine import OllamaEngine
 
@@ -118,7 +118,7 @@ class TestOpenAIEngine:
         high_signal = ["we have an outage", "need to do RCA"]
         
         with patch.object(engine.client, 'post', return_value=mock_response) as mock_post:
-            result = engine.classify_meeting_type("transcript text", high_signal_segments=high_signal)
+            engine.classify_meeting_type("transcript text", high_signal_segments=high_signal)
             
             # Verify high-signal segments included in prompt
             call_args = mock_post.call_args

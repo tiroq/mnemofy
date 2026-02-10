@@ -1,6 +1,5 @@
 """Speech transcription module using faster-whisper."""
 
-import json
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -309,7 +308,6 @@ class Transcriber:
             
             # If pause ≤ 500ms, stitch to current segment
             if pause_duration <= 0.5:
-                before_text = current_segment["text"]
                 current_segment["text"] = current_segment["text"].strip() + " " + curr_seg["text"].strip()
                 current_segment["end"] = curr_seg["end"]
                 

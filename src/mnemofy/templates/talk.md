@@ -10,7 +10,7 @@
 
 {% if overview %}
 {% for item in overview %}
-- **{{ item.text }}**{% if item.references %} ([{{ item.references[0].start_time | round(0) | int }}:{{ (item.references[0].start_time % 60) | round(0) | int | string | rjust(2, '0') }}](transcript://{{ item.references[0].reference_id }})){% endif %}
+- **{{ item.text }}**{% if item.references %} ([{{ item.references[0].start_time | seconds_to_mmss }}](transcript://{{ item.references[0].reference_id }})){% endif %}
 {% endfor %}
 {% else %}
 *No overview provided*
@@ -22,7 +22,7 @@
 
 {% if key_points %}
 {% for point in key_points %}
-- **{{ point.text }}**{% if point.references %} ([{{ point.references[0].start_time | round(0) | int }}:{{ (point.references[0].start_time % 60) | round(0) | int | string | rjust(2, '0') }}](transcript://{{ point.references[0].reference_id }})){% endif %}
+- **{{ point.text }}**{% if point.references %} ([{{ point.references[0].start_time | seconds_to_mmss }}](transcript://{{ point.references[0].reference_id }})){% endif %}
 {% endfor %}
 {% else %}
 *No key points extracted*
@@ -34,7 +34,7 @@
 
 {% if examples %}
 {% for example in examples %}
-- **{{ example.text }}**{% if example.references %} ([{{ example.references[0].start_time | round(0) | int }}:{{ (example.references[0].start_time % 60) | round(0) | int | string | rjust(2, '0') }}](transcript://{{ example.references[0].reference_id }})){% endif %}
+- **{{ example.text }}**{% if example.references %} ([{{ example.references[0].start_time | seconds_to_mmss }}](transcript://{{ example.references[0].reference_id }})){% endif %}
 {% endfor %}
 {% else %}
 *No examples provided*
@@ -46,7 +46,7 @@
 
 {% if takeaways %}
 {% for takeaway in takeaways %}
-- **{{ takeaway.text }}**{% if takeaway.references %} ([{{ takeaway.references[0].start_time | round(0) | int }}:{{ (takeaway.references[0].start_time % 60) | round(0) | int | string | rjust(2, '0') }}](transcript://{{ takeaway.references[0].reference_id }})){% endif %}
+- **{{ takeaway.text }}**{% if takeaway.references %} ([{{ takeaway.references[0].start_time | seconds_to_mmss }}](transcript://{{ takeaway.references[0].reference_id }})){% endif %}
 {% endfor %}
 {% else %}
 *No takeaways specified*
@@ -58,7 +58,7 @@
 
 {% if questions %}
 {% for question in questions %}
-- **Q: {{ question.text }}**{% if question.references %} ([{{ question.references[0].start_time | round(0) | int }}:{{ (question.references[0].start_time % 60) | round(0) | int | string | rjust(2, '0') }}](transcript://{{ question.references[0].reference_id }})){% endif %}
+- **Q: {{ question.text }}**{% if question.references %} ([{{ question.references[0].start_time | seconds_to_mmss }}](transcript://{{ question.references[0].reference_id }})){% endif %}
 {% endfor %}
 {% else %}
 *No questions recorded*
@@ -70,7 +70,7 @@
 
 {% if mentions %}
 {% for mention in mentions %}
-- {{ mention.text }}{% if mention.references %} ([{{ mention.references[0].start_time | round(0) | int }}:{{ (mention.references[0].start_time % 60) | round(0) | int | string | rjust(2, '0') }}](transcript://{{ mention.references[0].reference_id }})){% endif %}
+- {{ mention.text }}{% if mention.references %} ([{{ mention.references[0].start_time | seconds_to_mmss }}](transcript://{{ mention.references[0].reference_id }})){% endif %}
 {% endfor %}
 {% else %}
 *No references mentioned*

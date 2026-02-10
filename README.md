@@ -307,7 +307,7 @@ engine = "ollama"
 model = "llama3.2:3b"
 base_url = "http://localhost:11434"
 timeout = 60
-retries = 2
+max_retries = 2
 ```
 
 Then run:
@@ -315,7 +315,7 @@ Then run:
 mnemofy transcribe meeting.mp4 --notes llm
 ```
 
-####Option 3: CLI Flags (highest precedence)
+#### Option 3: CLI Flags (highest precedence)
 ```bash
 mnemofy transcribe meeting.mp4 \
   --notes llm \
