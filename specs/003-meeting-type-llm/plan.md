@@ -47,61 +47,74 @@ Automatically detect meeting types (status, planning, design, demo, talk, incide
 ### Documentation (this feature)
 
 ```text
-specs/[###-feature]/
+specs/003-meeting-type-llm/
+├── spec.md              # Feature specification
 ├── plan.md              # This file (/speckit.plan command output)
 ├── research.md          # Phase 0 output (/speckit.plan command)
 ├── data-model.md        # Phase 1 output (/speckit.plan command)
 ├── quickstart.md        # Phase 1 output (/speckit.plan command)
 ├── contracts/           # Phase 1 output (/speckit.plan command)
+│   ├── classification-result.schema.json
+│   ├── llm-config.schema.json
+│   └── notes-template.schema.json
 └── tasks.md             # Phase 2 output (/speckit.tasks command - NOT created by /speckit.plan)
 ```
 
 ### Source Code (repository root)
-<!--
-  ACTION REQUIRED: Replace the placeholder tree below with the concrete layout
-  for this feature. Delete unused options and expand the chosen structure with
-  real paths (e.g., apps/admin, packages/something). The delivered plan must
-  not include Option labels.
--->
 
 ```text
-# [REMOVE IF UNUSED] Option 1: Single project (DEFAULT)
-src/
-├── models/
-├── services/
-├── cli/
-└── lib/
+src/mnemofy/
+├── __init__.py
+├── audio.py                    # Existing
+├── cli.py                      # MODIFIED: Add meeting-type CLI flags
+├── formatters.py               # Existing
+├── model_selector.py           # Existing
+├── notes.py                    # MODIFIED: Extend for template rendering
+├── output_manager.py           # MODIFIED: Add meeting-type.json output
+├── resources.py                # Existing
+├── transcriber.py              # Existing
+├── classifier.py               # NEW: Meeting type detection (heuristic + LLM)
+├── llm/                        # NEW: LLM integration module
+│   ├── __init__.py
+│   ├── base.py                 # Abstract LLM engine interface
+│   ├── openai_engine.py        # OpenAI-compatible API client
+│   ├── ollama_engine.py        # Ollama local client
+│   └── config.py               # LLM configuration loader (TOML + env vars)
+├── templates/                  # NEW: Jinja2 meeting notes templates
+│   ├── status.md
+│   ├── planning.md
+│   ├── design.md
+│   ├── demo.md
+│   ├── talk.md
+│   ├── incident.md
+│   ├── discovery.md
+│   ├── oneonone.md
+│   └── brainstorm.md
+└── tui/
+    ├── __init__.py
+    ├── model_menu.py           # Existing
+    └── meeting_type_menu.py    # NEW: Interactive meeting type selection
 
 tests/
-├── contract/
-├── integration/
-└── unit/
-
-# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
-backend/
-├── src/
-│   ├── models/
-│   ├── services/
-│   └── api/
-└── tests/
-
-frontend/
-├── src/
-│   ├── components/
-│   ├── pages/
-│   └── services/
-└── tests/
-
-# [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
-api/
-└── [same as backend above]
-
-ios/ or android/
-└── [platform-specific structure: feature modules, UI flows, platform tests]
+├── __init__.py
+├── test_audio.py               # Existing
+├── test_cli_integration.py     # MODIFIED: Add meeting-type tests
+├── test_formatters.py          # Existing
+├── test_integration_pipeline.py # MODIFIED: Add end-to-end meeting workflow
+├── test_model_selector.py      # Existing
+├── test_notes_enhanced.py      # Existing
+├── test_output_manager.py      # MODIFIED: Add meeting-type.json tests
+├── test_resources.py           # Existing
+├── test_transcriber.py         # Existing
+├── test_tui_model_menu.py      # Existing
+├── test_classifier.py          # NEW: Heuristic + LLM classification tests
+├── test_llm_engines.py         # NEW: Contract tests for LLM interfaces
+├── test_llm_config.py          # NEW: Configuration loading tests
+├── test_template_rendering.py  # NEW: Jinja2 template tests
+└── test_meeting_type_menu.py   # NEW: Interactive menu tests
 ```
 
-**Structure Decision**: [Document the selected structure and reference the real
-directories captured above]
+**Structure Decision**: Single Python project structure (Option 1). This feature extends the existing mnemofy CLI with new modules for classification (`classifier.py`), LLM integration (`llm/`), and template rendering (Jinja2 templates in `templates/`). Existing modules (`cli.py`, `notes.py`, `output_manager.py`) are modified to integrate the new functionality.
 
 ## Complexity Tracking
 
