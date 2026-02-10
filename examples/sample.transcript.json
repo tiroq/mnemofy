@@ -1,0 +1,77 @@
+{
+  "schema_version": "1.0",
+  "metadata": {
+    "engine": "faster-whisper",
+    "model": "base",
+    "language": "en",
+    "duration": 310.0,
+    "timestamp": "2026-02-10T14:30:00Z"
+  },
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 15.0,
+      "text": "Welcome everyone to today's product planning meeting. I'm glad we could all make it."
+    },
+    {
+      "start": 15.0,
+      "end": 32.0,
+      "text": "Let's start by discussing our roadmap for Q2. We have several important features to prioritize."
+    },
+    {
+      "start": 32.0,
+      "end": 65.0,
+      "text": "First on the agenda is the new dashboard redesign. Sarah, can you give us an update on the progress?"
+    },
+    {
+      "start": 65.0,
+      "end": 88.0,
+      "text": "Sure. The design team has completed the mockups and we're ready to move into development phase."
+    },
+    {
+      "start": 88.0,
+      "end": 115.0,
+      "text": "Great. I think we should decide today whether to include the advanced analytics module in the first release."
+    },
+    {
+      "start": 115.0,
+      "end": 138.0,
+      "text": "After reviewing the timeline, I believe we can include it if we allocate two additional developers."
+    },
+    {
+      "start": 138.0,
+      "end": 165.0,
+      "text": "That makes sense. We've decided to go ahead with the analytics module in the initial release."
+    },
+    {
+      "start": 165.0,
+      "end": 190.0,
+      "text": "Perfect. John, can you create the technical specification document by Friday?"
+    },
+    {
+      "start": 190.0,
+      "end": 212.0,
+      "text": "Absolutely, I'll have that ready. Should we schedule a follow-up next week to review it?"
+    },
+    {
+      "start": 212.0,
+      "end": 235.0,
+      "text": "Yes, let's plan for Tuesday at 2 PM. Any other concerns or questions about the project?"
+    },
+    {
+      "start": 235.0,
+      "end": 260.0,
+      "text": "One concern - we might face integration challenges with the legacy API. We should assess the risk."
+    },
+    {
+      "start": 260.0,
+      "end": 285.0,
+      "text": "Good point. Let's have the engineering team evaluate that this week and report back."
+    },
+    {
+      "start": 285.0,
+      "end": 310.0,
+      "text": "Alright, I think we've covered everything. Thanks everyone for the productive discussion."
+    }
+  ]
+}
