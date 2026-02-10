@@ -409,6 +409,54 @@ mnemofy transcribe meeting.mp4 \
 - `meeting.changes.md` (change log)
 - `meeting.notes.md` (improved notes)
 
+## Rerun Handling & Model Comparison
+
+### Comparing Different Models
+
+By default, reruns **overwrite** previous results. Use `--model-suffix` to preserve outputs from different models for side-by-side comparison:
+
+```bash
+# Compare quality across models
+mnemofy transcribe meeting.mp4 --model tiny --model-suffix
+mnemofy transcribe meeting.mp4 --model base --model-suffix
+mnemofy transcribe meeting.mp4 --model small --model-suffix
+
+# Result: All preserved with model in filename
+# → meeting.tiny.transcript.json
+# → meeting.base.transcript.json
+# → meeting.small.transcript.json
+```
+
+**Files with model suffix**:
+- `*.transcript.{txt,srt,json}` → `*.{model}.transcript.{txt,srt,json}`
+- `*.metadata.json` → `*.{model}.metadata.json`
+- `*.artifacts.json` → `*.{model}.artifacts.json`
+
+### Run History Tracking
+
+Every run is automatically logged to `*.run-history.jsonl`:
+
+```bash
+# View run history
+cat meeting.run-history.jsonl | jq '.'
+
+# Compare model performance
+python examples/compare_model_runs.py meeting.run-history.jsonl
+```
+
+**Run history includes**:
+- Timestamp, model name, processing duration
+- Word count, segment count, transcript duration
+- Configuration (language, normalization, etc.)
+
+**Use cases**:
+- 🔍 Compare model quality (word count, segment count)
+- ⚡ Benchmark processing speed
+- 📊 Track configuration changes over time
+- 🎯 Find optimal model for your use case
+
+See [docs/RERUN_HANDLING.md](docs/RERUN_HANDLING.md) for complete guide.
+
 ## Example Output
 
 Given an audio file with meeting content, mnemofy generates structured Markdown (`.notes.md`) like:
