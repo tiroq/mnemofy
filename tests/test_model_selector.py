@@ -8,8 +8,10 @@ Tests cover:
 - Model recommendation with reasoning
 """
 
+import io
 import pytest
 from unittest.mock import Mock
+from rich.console import Console
 
 from mnemofy.model_selector import (
     MODEL_SPECS,
@@ -21,6 +23,14 @@ from mnemofy.model_selector import (
     list_models,
     recommend_model,
 )
+
+
+def _render_table(table):
+    """Helper to render a Rich Table to string for assertions."""
+    string_io = io.StringIO()
+    console = Console(file=string_io, width=120, legacy_windows=False)
+    console.print(table)
+    return string_io.getvalue()
 
 
 class TestModelSpec:
@@ -594,18 +604,20 @@ class TestGetModelTable:
         """Test get_model_table returns a formatted string."""
         resources = self._make_resources()
         table = get_model_table(resources)
+        table_str = _render_table(table)
         
-        assert isinstance(table, str)
-        assert len(table) > 0
-        assert "Model" in table or "model" in table.lower()
+        assert isinstance(table_str, str)
+        assert len(table_str) > 0
+        assert "Model" in table_str or "model" in table_str.lower()
 
     def test_get_model_table_includes_all_models(self):
         """Test table includes all models from MODEL_SPECS."""
         resources = self._make_resources()
         table = get_model_table(resources)
+        table_str = _render_table(table)
         
         for model_name in list_models():
-            assert model_name in table
+            assert model_name in table_str
 
     def test_get_model_table_with_recommended_model(self):
         """Test table highlights recommended model."""
@@ -613,38 +625,42 @@ class TestGetModelTable:
         recommended_spec = MODEL_SPECS["small"]
         
         table = get_model_table(resources, recommended=recommended_spec)
+        table_str = _render_table(table)
         
-        assert "small" in table
-        assert "Recommended" in table or "recommended" in table.lower()
+        assert "small" in table_str
+        assert "Recommended" in table_str or "recommended" in table_str.lower()
 
     def test_get_model_table_shows_compatibility_status(self):
         """Test table displays compatibility status for models."""
         resources = self._make_resources(available_ram_gb=1.5)  # Only tiny + base fit
         table = get_model_table(resources, use_gpu=False)
+        table_str = _render_table(table)
         
         # Should show compatible and incompatible markers
-        assert "Compatible" in table or "compatible" in table.lower() or \
-               "Incompatible" in table or "incompatible" in table.lower() or \
-               "✓" in table or "✗" in table
+        assert "Compatible" in table_str or "compatible" in table_str.lower() or \
+               "Incompatible" in table_str or "incompatible" in table_str.lower() or \
+               "✓" in table_str or "✗" in table_str
 
     def test_get_model_table_ram_requirements(self):
         """Test table shows RAM requirements for all models."""
         resources = self._make_resources()
         table = get_model_table(resources, use_gpu=False)
+        table_str = _render_table(table)
         
         # Should show actual RAM requirements (all end in GB)
-        assert "GB" in table
+        assert "GB" in table_str
         # Should have RAM requirements for multiple models
-        assert table.count("GB") >= len(list_models())
+        assert table_str.count("GB") >= len(list_models())
 
     def test_get_model_table_speed_quality_visualization(self):
         """Test table uses bar visualization for speed/quality."""
         resources = self._make_resources()
         table = get_model_table(resources)
+        table_str = _render_table(table)
         
         # Table should have filled/empty bar characters
-        assert "█" in table or "░" in table or \
-               "|" in table or "-" in table  # Alternative visualization
+        assert "█" in table_str or "░" in table_str or \
+               "|" in table_str or "-" in table_str  # Alternative visualization
 
     def test_get_model_table_with_gpu_shows_vram(self):
         """Test table shows VRAM requirements when GPU is available."""
@@ -654,9 +670,10 @@ class TestGetModelTable:
             available_vram_gb=4.0
         )
         table = get_model_table(resources, use_gpu=True)
+        table_str = _render_table(table)
         
         # Should show VRAM column (even if some are N/A)
-        assert "VRAM" in table or "vram" in table.lower() or "N/A" in table
+        assert "VRAM" in table_str or "vram" in table_str.lower() or "N/A" in table_str
 
     def test_get_model_table_cpu_mode_disables_gpu_filtering(self):
         """Test that use_gpu=False ignores GPU resources."""
@@ -669,11 +686,13 @@ class TestGetModelTable:
         
         table_gpu = get_model_table(resources, use_gpu=True)
         table_cpu = get_model_table(resources, use_gpu=False)
+        table_gpu_str = _render_table(table_gpu)
+        table_cpu_str = _render_table(table_cpu)
         
         # CPU mode should show more compatible models than GPU mode
         # (since GPU VRAM constraint doesn't apply)
-        compatible_gpu = table_gpu.count("Compatible") + table_gpu.count("✓")
-        compatible_cpu = table_cpu.count("Compatible") + table_cpu.count("✓")
+        compatible_gpu = table_gpu_str.count("Compatible") + table_gpu_str.count("✓")
+        compatible_cpu = table_cpu_str.count("Compatible") + table_cpu_str.count("✓")
         assert compatible_cpu >= compatible_gpu
 
     def test_get_model_table_risky_status_for_low_margin(self):
@@ -683,19 +702,21 @@ class TestGetModelTable:
         # Margin: (1.1475 - 1.0) / 1.0 = 0.1475 = 14.75% < 20%
         resources = self._make_resources(available_ram_gb=1.35, has_gpu=False)
         table = get_model_table(resources, use_gpu=False)
+        table_str = _render_table(table)
         
         # Should mark tiny as risky since margin < 20%
-        table_content = table.lower()
-        has_risky = "risky" in table_content or "⚠" in table
+        table_content = table_str.lower()
+        has_risky = "risky" in table_content or "⚠" in table_str
         assert has_risky, "Expected risky status indicator for low safety margin"
 
     def test_get_model_table_incompatible_status(self):
         """Test incompatible status when no resources available."""
         resources = self._make_resources(available_ram_gb=0.5)  # Less than tiny (1GB)
         table = get_model_table(resources, use_gpu=False)
+        table_str = _render_table(table)
         
         # All models should show as incompatible
-        assert "Incompatible" in table or "incompatible" in table.lower() or "✗" in table
+        assert "Incompatible" in table_str or "incompatible" in table_str.lower() or "✗" in table_str
 
     def test_get_model_table_metal_gpu_no_vram(self):
         """Test table handles Metal GPU (unified memory, no VRAM reporting)."""
@@ -706,13 +727,14 @@ class TestGetModelTable:
             available_vram_gb=None  # Metal doesn't report separate VRAM
         )
         table = get_model_table(resources, use_gpu=True)
+        table_str = _render_table(table)
         
         # Should still produce valid table with model specifications
-        assert isinstance(table, str)
-        assert len(table) > 0
+        assert isinstance(table_str, str)
+        assert len(table_str) > 0
         # Should have models and VRAM column (even if it's 1.0 GB for each)
-        assert "tiny" in table
-        assert "GB" in table
+        assert "tiny" in table_str
+        assert "GB" in table_str
 
     def test_get_model_table_no_recommended_model(self):
         """Test table works without recommended parameter."""
@@ -720,8 +742,9 @@ class TestGetModelTable:
         
         # Should not raise error and should return valid table
         table = get_model_table(resources, recommended=None)
-        assert isinstance(table, str)
-        assert len(table) > 0
+        table_str = _render_table(table)
+        assert isinstance(table_str, str)
+        assert len(table_str) > 0
 
     def test_get_model_table_recommended_not_in_specs(self):
         """Test table handles recommended model gracefully if not in specs."""
@@ -738,5 +761,6 @@ class TestGetModelTable:
         
         # Should not crash, just won't find the recommended model in table
         table = get_model_table(resources, recommended=fake_recommended)
-        assert isinstance(table, str)
-        assert "fake-model" not in table  # Not in MODEL_SPECS
+        table_str = _render_table(table)
+        assert isinstance(table_str, str)
+        assert "fake-model" not in table_str  # Not in MODEL_SPECS

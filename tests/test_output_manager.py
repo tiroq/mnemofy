@@ -171,6 +171,7 @@ class TestOutputManagerOutdirCreation:
 class TestOutputManagerOutdirPermissions:
     """Tests for output directory permissions validation."""
     
+    @pytest.mark.skipif(os.name == "nt", reason="chmod not reliable on Windows")
     def test_nonwritable_outdir(self, tmp_path):
         """Test error when output directory is not writable."""
         input_file = tmp_path / "video.mp4"

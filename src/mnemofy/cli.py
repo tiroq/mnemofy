@@ -235,7 +235,7 @@ def transcribe(
                 "engine": "faster-whisper",
                 "model": selected_model,
                 "language": lang or "en",
-                "duration": sum(s.end - s.start for s in segments),
+                "duration": sum(s["end"] - s["start"] for s in segments),
             }
             
             # Generate all formats
@@ -263,8 +263,13 @@ def transcribe(
             task = progress.add_task("Generating notes...", total=None)
 
             # Use enhanced notes generator instead of legacy implementation
-            notes_generator = StructuredNotesGenerator(mode=notes)
-            notes_markdown = notes_generator.generate(segments, metadata)
+            try:
+                notes_generator = StructuredNotesGenerator(mode=notes)
+                notes_markdown = notes_generator.generate(segments, metadata, include_audio=keep_audio)
+            except NotImplementedError as e:
+                console.print(f"[red]Error: {e}[/red]")
+                console.print("[yellow]The 'llm' mode is not yet implemented. Please use 'basic' mode.[/yellow]")
+                raise typer.Exit(1)
             
             # Determine output path for notes
             if output is None:

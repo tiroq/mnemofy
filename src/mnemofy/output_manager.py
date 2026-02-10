@@ -51,6 +51,8 @@ class OutputManager:
         input_path = Path(input_path).expanduser().resolve()
         if not input_path.exists():
             raise FileNotFoundError(f"Input file not found: {input_path}")
+        if input_path.is_dir():
+            raise ValueError(f"Input path is a directory, not a file: {input_path}")
         
         self._input_path = input_path
         self._basename = input_path.stem  # filename without extension
