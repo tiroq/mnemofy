@@ -260,14 +260,14 @@ class Transcriber:
             Text with fillers removed
         """
         # Conservative pattern - only remove obvious fillers
-        # Avoid removing "like" when used as verb/comparison
         filler_patterns = [
             r'\bum+\b',
             r'\buh+\b',
             r'\bhmm+\b',
-            r'\b(you know|I mean|so like|kind of like)\b',
-            # Only remove standalone "like" at start of sentence or after comma
-            r'(?<=^|\,\s)like\b',
+            r'\b(you know|I mean)\b',
+            # Remove "so like" or "kind of like" filler phrases
+            r'\bso like\b',
+            r'\bkind of like\b',
         ]
         
         result = text
