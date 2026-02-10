@@ -42,6 +42,7 @@ class AudioExtractor:
         Args:
             input_file: Path to input media file
             output_file: Optional path for output audio file. If None, creates temp file.
+                        Parent directory will be created if it doesn't exist.
 
         Returns:
             Path to extracted audio file (WAV format)
@@ -49,6 +50,7 @@ class AudioExtractor:
         Raises:
             ValueError: If file format is not supported
             RuntimeError: If audio extraction fails
+            FileNotFoundError: If input file not found
         """
         if not input_file.exists():
             raise FileNotFoundError(f"Input file not found: {input_file}")
@@ -67,6 +69,8 @@ class AudioExtractor:
             # Copy if output path specified
             import shutil
 
+            # Ensure output directory exists
+            output_file.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(input_file, output_file)
             return output_file
 
@@ -77,6 +81,9 @@ class AudioExtractor:
             )
             output_file = Path(temp_file.name)
             temp_file.close()
+        else:
+            # Ensure output directory exists
+            output_file.parent.mkdir(parents=True, exist_ok=True)
 
         # Extract audio using ffmpeg
         try:
