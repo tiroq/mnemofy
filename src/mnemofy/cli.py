@@ -8,6 +8,7 @@ from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from mnemofy.audio import AudioExtractor
+from mnemofy.classifier import HeuristicClassifier, MeetingType
 from mnemofy.formatters import TranscriptFormatter
 from mnemofy.model_selector import (
     ModelSelectionError,
@@ -15,7 +16,11 @@ from mnemofy.model_selector import (
     list_models,
     recommend_model,
 )
-from mnemofy.notes import StructuredNotesGenerator
+from mnemofy.notes import (
+    StructuredNotesGenerator,
+    BasicNotesExtractor,
+    render_meeting_notes,
+)
 from mnemofy.output_manager import OutputManager
 from mnemofy.resources import detect_system_resources
 from mnemofy.transcriber import Transcriber
@@ -97,6 +102,21 @@ def transcribe(
         "basic",
         "--notes",
         help="Notes generation mode: 'basic' (deterministic) or 'llm' (LLM-enhanced, future feature)",
+    ),
+    meeting_type: Optional[str] = typer.Option(
+        "auto",
+        "--meeting-type",
+        help="Meeting type: auto (detect), status, planning, design, demo, talk, incident, discovery, oneonone, brainstorm",
+    ),
+    classify: str = typer.Option(
+        "heuristic",
+        "--classify",
+        help="Classification mode: heuristic (default), llm (future), or off (disable detection)",
+    ),
+    template: Optional[Path] = typer.Option(
+        None,
+        "--template",
+        help="Custom template file path (overrides default meeting type templates)",
     ),
 ) -> None:
     """
@@ -258,7 +278,51 @@ def transcribe(
 
             progress.update(task, description="[green]✓ Transcripts generated")
 
-        # Step 4: Generate notes
+        # Step 4: Detect meeting type (if enabled)
+        classification_result = None
+        detected_type = None
+        
+        if classify != "off" and meeting_type == "auto":
+            with Progress(
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                console=console,
+            ) as progress:
+                task = progress.add_task("Detecting meeting type...", total=None)
+                
+                if classify == "heuristic":
+                    # Use heuristic classifier
+                    transcript_text = " ".join(s["text"] for s in segments)
+                    classifier = HeuristicClassifier()
+                    classification_result = classifier.detect_meeting_type(transcript_text, segments)
+                    detected_type = classification_result.detected_type
+                    
+                    # Display detection result
+                    confidence_pct = classification_result.confidence * 100
+                    console.print(f"\n[bold]Detected Meeting Type:[/bold] {detected_type.value}")
+                    console.print(f"[dim]Confidence: {confidence_pct:.1f}%[/dim]")
+                    if classification_result.evidence:
+                        console.print(f"[dim]Evidence: {', '.join(classification_result.evidence[:3])}[/dim]")
+                    
+                    progress.update(task, description="[green]✓ Meeting type detected")
+                elif classify == "llm":
+                    console.print("[yellow]LLM classification not yet implemented, falling back to heuristic[/yellow]")
+                    transcript_text = " ".join(s["text"] for s in segments)
+                    classifier = HeuristicClassifier()
+                    classification_result = classifier.detect_meeting_type(transcript_text, segments)
+                    detected_type = classification_result.detected_type
+                    progress.update(task, description="[green]✓ Meeting type detected (heuristic fallback)")
+        elif meeting_type != "auto":
+            # Use explicit meeting type
+            try:
+                detected_type = MeetingType(meeting_type.lower())
+                console.print(f"\n[dim]Using explicit meeting type: {detected_type.value}[/dim]")
+            except ValueError:
+                console.print(f"[red]Error:[/red] Invalid meeting type '{meeting_type}'")
+                console.print(f"Valid types: {', '.join(mt.value for mt in MeetingType)}")
+                raise typer.Exit(1)
+        
+        # Step 5: Generate notes
         with Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
@@ -266,21 +330,61 @@ def transcribe(
         ) as progress:
             task = progress.add_task("Generating notes...", total=None)
 
-            # Use enhanced notes generator instead of legacy implementation
-            try:
-                notes_generator = StructuredNotesGenerator(mode=notes)
-                notes_markdown = notes_generator.generate(segments, metadata, include_audio=keep_audio)
-            except NotImplementedError as e:
-                console.print(f"[red]Error: {e}[/red]")
-                console.print("[yellow]The 'llm' mode is not yet implemented. Please use 'basic' mode.[/yellow]")
-                raise typer.Exit(1)
+            # Use meeting-type-aware notes generation if type detected
+            if detected_type and not template:
+                # Extract structured information
+                extractor = BasicNotesExtractor()
+                extracted_items = extractor.extract_all(segments, detected_type)
+                
+                # Prepare metadata for template
+                template_metadata = {
+                    "title": title,
+                    "date": metadata.get("date", ""),
+                    "duration": f"{int(metadata['duration'] // 60)}m {int(metadata['duration'] % 60)}s",
+                    "confidence": f"{classification_result.confidence:.2f}" if classification_result else "N/A",
+                    "engine": classification_result.engine if classification_result else "manual",
+                }
+                
+                # Render using appropriate template
+                notes_markdown = render_meeting_notes(
+                    detected_type,
+                    extracted_items,
+                    template_metadata,
+                    custom_template_dir=template.parent if template else None
+                )
+            else:
+                # Fall back to legacy notes generator
+                try:
+                    notes_generator = StructuredNotesGenerator(mode=notes)
+                    notes_markdown = notes_generator.generate(segments, metadata, include_audio=keep_audio)
+                except NotImplementedError as e:
+                    console.print(f"[red]Error: {e}[/red]")
+                    console.print("[yellow]The 'llm' mode is not yet implemented. Please use 'basic' mode.[/yellow]")
+                    raise typer.Exit(1)
             
             # Determine output path for notes
             if output is None:
                 output = manager.get_notes_path()
             
-            # Write output
+            # Write notes output
             output.write_text(notes_markdown, encoding="utf-8")
+            
+            # Write meeting-type.json if type was detected
+            if classification_result:
+                import json
+                meeting_type_path = manager.outdir / f"{manager.base_name}.meeting-type.json"
+                meeting_type_data = {
+                    "detected_type": classification_result.detected_type.value,
+                    "confidence": classification_result.confidence,
+                    "evidence": classification_result.evidence,
+                    "secondary_types": [
+                        {"type": mt.value, "score": score}
+                        for mt, score in classification_result.secondary_types
+                    ],
+                    "engine": classification_result.engine,
+                    "timestamp": classification_result.timestamp.isoformat(),
+                }
+                meeting_type_path.write_text(json.dumps(meeting_type_data, indent=2), encoding="utf-8")
 
             progress.update(task, description="[green]✓ Notes generated")
 
@@ -296,6 +400,9 @@ def transcribe(
         console.print(f"  Transcript (TXT): {txt_path}")
         console.print(f"  Subtitle (SRT): {srt_path}")
         console.print(f"  Structured (JSON): {json_path}")
+        if classification_result:
+            meeting_type_path = manager.outdir / f"{manager.base_name}.meeting-type.json"
+            console.print(f"  Meeting Type: {meeting_type_path}")
         console.print(f"  Notes: {output}")
 
         # Show stats
