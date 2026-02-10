@@ -70,7 +70,7 @@ def benchmark_heuristic_classification():
 
 
 def benchmark_menu_rendering():
-    """Benchmark meeting type menu rendering."""
+    """Benchmark meeting type menu initialization."""
     from mnemofy.tui.meeting_type_menu import MeetingTypeMenu
     from mnemofy.classifier import ClassificationResult, MeetingType
     from datetime import datetime
@@ -95,10 +95,10 @@ def benchmark_menu_rendering():
     for _ in range(10):
         start = time.time()
         menu = MeetingTypeMenu(result)
-        # Access properties to ensure full initialization
-        _ = menu.classification
-        _ = menu._get_confidence_color(result.confidence)
-        _ = menu._get_type_description(MeetingType.PLANNING)
+        # Force computation of all candidates and descriptions
+        for mt, score in menu.candidates:
+            _ = menu._get_type_description(mt)
+            _ = menu._get_confidence_color(score)
         duration = time.time() - start
         times.append(duration * 1000)  # Convert to ms
     
