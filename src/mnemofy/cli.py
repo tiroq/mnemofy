@@ -27,6 +27,7 @@ from mnemofy.output_manager import OutputManager
 from mnemofy.resources import detect_system_resources
 from mnemofy.transcriber import Transcriber
 from mnemofy.tui.model_menu import ModelMenu, is_interactive_environment
+from mnemofy.tui.meeting_type_menu import select_meeting_type
 
 app = typer.Typer(
     name="mnemofy",
@@ -134,6 +135,11 @@ def transcribe(
         None,
         "--llm-base-url",
         help="Custom LLM API base URL (for openai_compat or custom endpoints)",
+    ),
+    no_interactive: bool = typer.Option(
+        False,
+        "--no-interactive",
+        help="Skip interactive prompts (auto-accept detected meeting type)",
     ),
 ) -> None:
     """
@@ -414,6 +420,27 @@ def transcribe(
                 console.print(f"[red]Error:[/red] Invalid meeting type '{meeting_type}'")
                 console.print(f"Valid types: {', '.join(mt.value for mt in MeetingType)}")
                 raise typer.Exit(1)
+        
+        # Step 4.5: Interactive meeting type selection (if enabled and available)
+        if detected_type and classification_result and not no_interactive:
+            # Show interactive menu for user to confirm or override
+            interactive_available = is_interactive_environment()
+            
+            if interactive_available:
+                try:
+                    # Let user confirm or override via menu
+                    selected_type = select_meeting_type(
+                        classification_result,
+                        auto_accept_threshold=0.6,
+                        interactive=True
+                    )
+                    
+                    if selected_type != detected_type:
+                        console.print(f"\n[cyan]User selected:[/cyan] {selected_type.value}")
+                        detected_type = selected_type
+                except Exception as e:
+                    console.print(f"[yellow]Warning:[/yellow] Interactive menu failed: {e}")
+                    console.print(f"[dim]Continuing with detected type: {detected_type.value}[/dim]")
         
         # Step 5: Generate notes
         with Progress(
