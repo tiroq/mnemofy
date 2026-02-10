@@ -10,7 +10,7 @@ Supports two modes:
 """
 
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -202,13 +202,14 @@ class StructuredNotesGenerator:
         duration_str = f"{minutes}m {seconds}s"
 
         # Get timestamp
-        timestamp = metadata.get("timestamp", datetime.utcnow().isoformat() + "Z")
+        utc_now = datetime.now(timezone.utc)
+        timestamp = metadata.get("timestamp", utc_now.isoformat().replace("+00:00", "Z"))
 
         # Build metadata section
         lines = [
             f"# Meeting Notes: {title}",
             "",
-            f"**Date**: {datetime.utcnow().strftime('%Y-%m-%d')}",
+            f"**Date**: {utc_now.strftime('%Y-%m-%d')}",
             f"**Source**: {Path(input_file).name} ({duration_str})" if input_file else f"**Duration**: {duration_str}",
             f"**Language**: {metadata.get('language', 'Unknown')}",
             f"**Engine**: {metadata.get('engine', 'Unknown')} ({metadata.get('model', 'Unknown')})",
