@@ -368,13 +368,13 @@ This document breaks down the implementation into concrete tasks organized by us
 **Description**: Add `--model`, `--auto`, `--no-gpu`, `--list-models` flags to CLI.
 
 **Acceptance Criteria**:
-- [ ] Add flags to `transcribe` command in `src/mnemofy/cli.py`
-- [ ] Update `--model` help text to mention auto-detection
-- [ ] Add `--auto` flag (bool, default False)
-- [ ] Add `--no-gpu` flag (bool, default False)
-- [ ] Add `--list-models` flag (bool, default False)
-- [ ] Ensure flags are mutually compatible (--list-models exits early)
-- [ ] Update `mnemofy transcribe --help` output
+- [X] Add flags to `transcribe` command in `src/mnemofy/cli.py`
+- [X] Update `--model` help text to mention auto-detection
+- [X] Add `--auto` flag (bool, default False)
+- [X] Add `--no-gpu` flag (bool, default False)
+- [X] Add `--list-models` flag (bool, default False)
+- [X] Ensure flags are mutually compatible (--list-models exits early)
+- [X] Update `mnemofy transcribe --help` output
 
 **Dependencies**: None (parallel with other tasks)
 
@@ -392,12 +392,12 @@ This document breaks down the implementation into concrete tasks organized by us
 **Description**: Display model table and exit when `--list-models` is passed.
 
 **Acceptance Criteria**:
-- [ ] Check for --list-models flag at start of transcribe command
-- [ ] Call detect_system_resources()
-- [ ] Call get_model_table() with detected resources
-- [ ] Print table to console
-- [ ] Exit with code 0 (success)
-- [ ] Write integration test
+- [X] Check for --list-models flag at start of transcribe command
+- [X] Call detect_system_resources()
+- [X] Call get_model_table() with detected resources
+- [X] Print table to console
+- [X] Exit with code 0 (success)
+- [X] Write integration test
 
 **Dependencies**: T-005, T-009, T-013
 
@@ -416,12 +416,12 @@ This document breaks down the implementation into concrete tasks organized by us
 **Description**: Implement `--model <name>` explicit override logic.
 
 **Acceptance Criteria**:
-- [ ] Check if --model flag is provided
-- [ ] If provided, skip all auto-detection and selection
-- [ ] Pass model name directly to Transcriber
-- [ ] Log INFO message: "Using explicit model: <name>"
-- [ ] Validate model name is in MODEL_SPECS (warn if not, but allow)
-- [ ] Write integration test
+- [X] Check if --model flag is provided
+- [X] If provided, skip all auto-detection and selection
+- [X] Pass model name directly to Transcriber
+- [X] Log INFO message: "Using explicit model: <name>"
+- [X] Validate model name is in MODEL_SPECS (warn if not, but allow)
+- [X] Write integration test
 
 **Dependencies**: T-006, T-013
 
@@ -440,17 +440,17 @@ This document breaks down the implementation into concrete tasks organized by us
 **Description**: Implement auto-selection (headless mode) logic.
 
 **Acceptance Criteria**:
-- [ ] If --model not provided:
-  - [ ] Call detect_system_resources()
-  - [ ] Call recommend_model(resources, use_gpu=not no_gpu)
-  - [ ] If --auto or not TTY:
-    - [ ] Auto-select recommended model
-    - [ ] Print INFO message: "Auto-selected: <model> (<reasoning>)"
-  - [ ] Else: proceed to interactive selection (next task)
-- [ ] Write integration tests for:
-  - [ ] --auto flag forces auto-selection
-  - [ ] Non-TTY environment forces auto-selection
-  - [ ] Reasoning message is displayed
+- [X] If --model not provided:
+  - [X] Call detect_system_resources()
+  - [X] Call recommend_model(resources, use_gpu=not no_gpu)
+  - [X] If --auto or not TTY:
+    - [X] Auto-select recommended model
+    - [X] Print INFO message: "Auto-selected: <model> (<reasoning>)"
+  - [X] Else: proceed to interactive selection (next task)
+- [X] Write integration tests for:
+  - [X] --auto flag forces auto-selection
+  - [X] Non-TTY environment forces auto-selection
+  - [X] Reasoning message is displayed
 
 **Dependencies**: T-005, T-008, T-013, T-015
 
@@ -469,14 +469,14 @@ This document breaks down the implementation into concrete tasks organized by us
 **Description**: Implement interactive menu display in TTY environments.
 
 **Acceptance Criteria**:
-- [ ] If TTY and not --auto:
-  - [ ] Call filter_compatible_models() to get full list
-  - [ ] Create ModelMenu instance
-  - [ ] Call menu.show()
-  - [ ] If user cancels (Esc, Ctrl+C): raise typer.Abort()
-  - [ ] If user selects model: use selected model
-  - [ ] Log INFO message: "Selected model: <name>"
-- [ ] Write integration test with mocked TTY and keyboard input
+- [X] If TTY and not --auto:
+  - [X] Call filter_compatible_models() to get full list
+  - [X] Create ModelMenu instance
+  - [X] Call menu.show()
+  - [X] If user cancels (Esc, Ctrl+C): raise typer.Abort()
+  - [X] If user selects model: use selected model
+  - [X] Log INFO message: "Selected model: <name>"
+- [X] Write integration test with mocked TTY and keyboard input
 
 **Dependencies**: T-006, T-007, T-011, T-016
 
@@ -495,15 +495,15 @@ This document breaks down the implementation into concrete tasks organized by us
 **Description**: Implement graceful error handling for detection failures.
 
 **Acceptance Criteria**:
-- [ ] If detect_system_resources() fails:
-  - [ ] Log ERROR message with details
-  - [ ] Fall back to conservative default (e.g., "base" model)
-  - [ ] Display warning to user
-  - [ ] Continue execution (don't crash)
-- [ ] If recommend_model() returns no compatible models:
-  - [ ] Display clear error message: "No Whisper model fits in available RAM (XGB). Try freeing memory or use --model tiny"
-  - [ ] Exit with error code 1
-- [ ] Write integration tests for both scenarios
+- [X] If detect_system_resources() fails:
+  - [X] Log ERROR message with details
+  - [X] Fall back to conservative default (e.g., "base" model)
+  - [X] Display warning to user
+  - [X] Continue execution (don't crash)
+- [X] If recommend_model() returns no compatible models:
+  - [X] Display clear error message: "No Whisper model fits in available RAM (XGB). Try freeing memory or use --model tiny"
+  - [X] Exit with error code 1
+- [X] Write integration tests for both scenarios
 
 **Dependencies**: T-005, T-008, T-016
 
