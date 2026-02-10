@@ -1,0 +1,73 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ClassificationResult",
+  "description": "Output schema for meeting type detection",
+  "type": "object",
+  "required": ["detected_type", "confidence", "evidence", "engine", "timestamp"],
+  "properties": {
+    "detected_type": {
+      "type": "string",
+      "enum": ["status", "planning", "design", "demo", "talk", "incident", "discovery", "oneonone", "brainstorm"],
+      "description": "Primary meeting type classification"
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "description": "Confidence score for the classification"
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "description": "Keywords or phrases that led to the classification"
+    },
+    "secondary_types": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type", "score"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["status", "planning", "design", "demo", "talk", "incident", "discovery", "oneonone", "brainstorm"]
+          },
+          "score": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 1.0
+          }
+        }
+      },
+      "maxItems": 5,
+      "description": "Alternative meeting types with scores, sorted descending"
+    },
+    "engine": {
+      "type": "string",
+      "enum": ["heuristic", "llm"],
+      "description": "Detection engine used for classification"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of classification"
+    }
+  },
+  "additionalProperties": false,
+  "examples": [
+    {
+      "detected_type": "planning",
+      "confidence": 0.72,
+      "evidence": ["timeline", "milestone", "estimate", "scope", "Q2 goals"],
+      "secondary_types": [
+        {"type": "status", "score": 0.48},
+        {"type": "design", "score": 0.31},
+        {"type": "brainstorm", "score": 0.19}
+      ],
+      "engine": "heuristic",
+      "timestamp": "2026-02-10T14:32:15Z"
+    }
+  ]
+}
