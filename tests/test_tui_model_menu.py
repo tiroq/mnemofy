@@ -9,8 +9,7 @@ Tests cover:
 - Model details rendering
 """
 
-import sys
-from unittest.mock import Mock, MagicMock, patch, call
+from unittest.mock import Mock, patch
 
 import pytest
 import readchar
@@ -186,23 +185,16 @@ class TestModelMenuNavigation:
     """Tests for menu navigation with keyboard input."""
 
     @patch("mnemofy.tui.model_menu.readchar.readchar")
-    def test_down_arrow_navigation(self, mock_read, sample_models):
+    @patch("mnemofy.tui.model_menu.readchar.key")
+    def test_down_arrow_navigation(self, mock_key, mock_read, sample_models):
         """Test down arrow key advances selection."""
         menu = ModelMenu(sample_models)
-        mock_read.side_effect = [readchar.key.DOWN, '\r']  # Down then Enter
+        mock_key.DOWN = '\x1b[B'  # ANSI down arrow code
+        mock_read.side_effect = ['\x1b[B', '\r']  # Down then Enter
         
-        with patch("mnemofy.tui.model_menu.readchar.key"):
-            import mnemofy.tui.model_menu as tui_module
-            tui_module.readchar.key.DOWN = '\x1b[B'  # ANSI down arrow code
-            mock_read.side_effect = ['\x1b[B', '\r']  # Down then Enter
-            
-            try:
-                result = menu._run_menu_loop()
-                # Should select base (index 1)
-                assert result == sample_models[1]
-            except:
-                # Navigation test - may fail due to readchar mock setup
-                pass
+        result = menu._run_menu_loop()
+        # Should select base (index 1)
+        assert result == sample_models[1]
 
     def test_navigation_wraparound_down(self, sample_models):
         """Test down arrow wraps from last to first model."""
@@ -277,7 +269,7 @@ class TestModelMenuComparison:
 
     def test_speed_quality_visualization(self, sample_models):
         """Test speed and quality are visualized as bars."""
-        menu = ModelMenu(sample_models)
+        ModelMenu(sample_models)
         
         # tiny: speed_rating=5, quality_rating=2
         # Expected: "█████" for speed, "██░░░" for quality
@@ -339,6 +331,7 @@ class TestModelMenuResourceWarnings:
         mock_resources.gpu_type = "cuda"
         mock_resources.available_vram_gb = 2.0
         menu = ModelMenu(sample_models, resources=mock_resources)
+        assert menu is not None
         
         # medium requires 4GB VRAM, won't fit in 2GB
         assert sample_models[2].min_vram_gb > mock_resources.available_vram_gb

@@ -678,14 +678,16 @@ class TestGetModelTable:
 
     def test_get_model_table_risky_status_for_low_margin(self):
         """Test that models with <20% safety margin show as risky."""
-        # Available RAM of 1.1 GB means only tiny (1.0 GB) fits with barely any margin
-        resources = self._make_resources(available_ram_gb=1.1, has_gpu=False)
+        # For tiny (1.0 GB) to be risky, we need safe_ram between 1.0 and 1.2GB
+        # With 85% safety margin: 1.35GB * 0.85 = 1.1475GB safe RAM
+        # Margin: (1.1475 - 1.0) / 1.0 = 0.1475 = 14.75% < 20%
+        resources = self._make_resources(available_ram_gb=1.35, has_gpu=False)
         table = get_model_table(resources, use_gpu=False)
         
-        # Should mark tiny as risky if margin < 20%
-        # (1.1 - 1.0) / 1.0 = 0.1 = 10% < 20%
+        # Should mark tiny as risky since margin < 20%
         table_content = table.lower()
         has_risky = "risky" in table_content or "⚠" in table
+        assert has_risky, "Expected risky status indicator for low safety margin"
 
     def test_get_model_table_incompatible_status(self):
         """Test incompatible status when no resources available."""

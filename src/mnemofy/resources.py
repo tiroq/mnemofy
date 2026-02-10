@@ -15,7 +15,6 @@ Functions:
 """
 
 import logging
-import os
 import platform
 import subprocess
 from dataclasses import dataclass
@@ -68,10 +67,11 @@ def get_cpu_info() -> Tuple[int, str]:
     """Detect CPU cores and architecture.
     
     Returns:
-        Tuple[int, str]: (number of logical cores, architecture string)
-        
-    Raises:
-        SystemResourceError: If CPU detection fails (though fallback values are provided).
+        Tuple[int, str]: (number of logical cores, architecture string).
+    
+    Notes:
+        This function never raises on detection failure. If CPU detection fails for any
+        reason, a warning is logged and fallback values ``(1, "unknown")`` are returned.
     """
     try:
         cores = psutil.cpu_count(logical=True) or 1
@@ -143,8 +143,8 @@ def _get_cuda_vram() -> Optional[float]:
             vram_gb = round(vram_mb / 1024, 2)
             logger.debug(f"Detected CUDA VRAM: {vram_gb}GB")
             return vram_gb
-    except (FileNotFoundError, ValueError, subprocess.TimeoutExpired, Exception):
-        pass
+    except (FileNotFoundError, ValueError, subprocess.TimeoutExpired, Exception) as e:
+        logger.debug(f"CUDA VRAM detection via nvidia-smi failed: {e}")
     return None
 
 
@@ -213,10 +213,7 @@ def get_gpu_info() -> Tuple[bool, Optional[str], Optional[float]]:
             logger.debug("Using Metal GPU (integrated, unified memory)")
             return True, "metal", None
         
-        # Check ROCm (not implemented yet, but reserved for future)
-        # if _detect_rocm():
-        #     vram = _get_rocm_vram()
-        #     return True, "rocm", vram
+        # TODO: Add ROCm (AMD GPU) detection and VRAM reporting in a future release.
         
         # No GPU detected
         logger.debug("No GPU detected, using CPU mode")

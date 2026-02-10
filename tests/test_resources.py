@@ -8,8 +8,7 @@ Tests cover:
 - Error handling and graceful degradation
 """
 
-import platform
-from unittest.mock import MagicMock, patch, Mock
+from unittest.mock import MagicMock, patch
 
 import pytest
 

@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Adaptive ASR Model Selection**: Intelligent model selection based on system resources
-  - Automatic CPU/RAM/GPU detection (CUDA, Metal, ROCm)
+  - Automatic CPU/RAM/GPU detection (CUDA, Metal)
   - Resource-aware model recommendation with 85% RAM safety margin
   - Interactive model selection menu in terminal environments
   - Headless mode for CI/automated deployments
@@ -33,7 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   
 - **Comprehensive Testing**:
   - 115+ unit tests covering all resource detection paths
-  - GPU detection tests for CUDA, Metal, and ROCm
+  - GPU detection tests for CUDA and Metal
   - Model filtering and recommendation algorithm tests
   - Interactive menu navigation and rendering tests
   - Integration tests for all CLI flag combinations
@@ -59,12 +59,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **GPU Support**:
   - CUDA: Uses `nvidia-smi` for VRAM detection
   - Metal (macOS): Unified memory model, no separate VRAM tracking
-  - ROCm (AMD): Basic detection, VRAM tracking via system utilities
+  - ROCm (AMD): Not yet implemented (planned for future release)
   
 - **Memory Requirements**:
   - Conservative estimates include model weights + inference overhead
   - 85% RAM safety margin to prevent OOM
-  - Fallback model: "base" (2.9 GB) for undetected systems
+  - Fallback model: "base" (1.5 GB) for undetected systems
   
 - **Architecture**:
   - `resources.py`: Cross-platform system detection

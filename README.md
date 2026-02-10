@@ -63,11 +63,11 @@ This will create `meeting_notes.md` in the same directory.
 
 mnemofy **automatically detects your system resources** (CPU, RAM, GPU) and selects the best Whisper model that fits in your available memory:
 
-- **Tiny** (1.5 GB): Fastest, suitable for low-RAM systems
-- **Base** (2.9 GB): Good balance of speed and accuracy
-- **Small** (5 GB): Better accuracy, requires 8GB+ RAM
-- **Medium** (11 GB): High accuracy, requires 16GB+ RAM  
-- **Large-v3** (20 GB): Best accuracy, requires 32GB+ RAM with GPU
+- **Tiny** (1.0 GB): Fastest, suitable for low-RAM systems
+- **Base** (1.5 GB): Good balance of speed and accuracy
+- **Small** (2.5 GB): Better accuracy, requires 8GB+ RAM
+- **Medium** (5.0 GB): High accuracy, requires 16GB+ RAM  
+- **Large-v3** (10.0 GB): Best accuracy, requires 32GB+ RAM with GPU
 
 **Default behavior** (recommended):
 ```bash
@@ -246,8 +246,8 @@ If model selection falls back to "base" when you expect GPU acceleration:
 
 2. Verify GPU drivers (NVIDIA/Metal/ROCm) are installed:
    - **NVIDIA**: `nvidia-smi` should work
-   - **macOS (Metal)**: Should just work on Apple Silicon/Intel
-   - **AMD (ROCm)**: Check `rocm` installation
+   - **macOS (Metal)**: Currently supported on macOS with Apple Silicon (ARM64); Intel Macs will fall back to CPU
+   - **AMD (ROCm)**: Not yet implemented (planned for future release)
 
 3. Force CPU mode if GPU causes issues:
    ```bash
