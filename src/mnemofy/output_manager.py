@@ -156,6 +156,24 @@ class OutputManager:
         """
         return self._outdir / f"{self._basename}.notes.md"
     
+    def get_changes_log_path(self) -> Path:
+        """Get path for transcript changes log file.
+        
+        Returns:
+            Path: <outdir>/<basename>.changes.md
+        
+        Notes:
+            Changes log documents normalization/repair modifications.
+            Only created when --normalize or --repair is used.
+            Markdown format (.changes.md).
+        
+        Examples:
+            manager = OutputManager("meeting.mp4", outdir="/out")
+            path = manager.get_changes_log_path()
+            # Returns: Path('/out/meeting.changes.md')
+        """
+        return self._outdir / f"{self._basename}.changes.md"
+    
     @property
     def outdir(self) -> Path:
         """Get the resolved output directory (Path object).
