@@ -1,7 +1,7 @@
 """Tests for transcript normalization and repair functionality."""
 
 import pytest
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock
 
 from mnemofy.transcriber import (
     Transcriber,

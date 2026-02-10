@@ -1,6 +1,5 @@
 """Tests for high-signal segment extraction."""
 
-import pytest
 from mnemofy.classifier import extract_high_signal_segments
 
 

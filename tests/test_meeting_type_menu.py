@@ -1,7 +1,7 @@
 """Tests for interactive meeting type menu."""
 
 import sys
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 import pytest
 
 from mnemofy.classifier import MeetingType, ClassificationResult
@@ -96,7 +96,6 @@ class TestMeetingTypeMenu:
         )
         
         menu = MeetingTypeMenu(result)
-        initial_index = menu.selected_index
         
         # Simulate DOWN key then ENTER
         mock_readkey.side_effect = [

@@ -8,7 +8,7 @@ import sys
 import logging
 from typing import Optional, List, Tuple
 
-from rich.console import Console
+from rich.console import Console, Group
 from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
@@ -139,12 +139,8 @@ class MeetingTypeMenu:
             # Selection indicator
             if i == self.selected_index:
                 indicator = "→"
-                type_style = "bold green"
-                score_style = "bold green"
             else:
                 indicator = " "
-                type_style = "cyan" if i == 0 else "dim cyan"
-                score_style = "white" if i == 0 else "dim"
             
             # Type name with recommended marker
             type_text = Text(meeting_type.value)
@@ -179,11 +175,12 @@ class MeetingTypeMenu:
         instructions.append("Esc ", style="bold cyan")
         instructions.append("Use recommended", style="dim")
         
-        # Render panel
-        content = Text()
-        content.append(table)
-        content.append(evidence_text)
-        content.append(instructions)
+        # Render panel with all components
+        content = Group(
+            table,
+            evidence_text,
+            instructions
+        )
         
         panel = Panel(
             content,
@@ -234,24 +231,26 @@ def select_meeting_type(
     Returns:
         Selected meeting type (detected or user override)
     """
+    # Auto-accept if confidence meets threshold
+    if classification_result.confidence >= auto_accept_threshold:
+        logger.debug(
+            f"Auto-accepting detected type (confidence {classification_result.confidence:.2f} >= {auto_accept_threshold})"
+        )
+        return classification_result.detected_type
+    
     # Check if we should show menu
     should_show_menu = (
         interactive
         and sys.stdin.isatty()
         and sys.stdout.isatty()
-        and classification_result.confidence < 1.0  # Don't show menu if 100% confident
     )
     
     if not should_show_menu:
         logger.debug(
             f"Auto-accepting detected type: interactive={interactive}, "
-            f"tty={sys.stdin.isatty()}, confidence={classification_result.confidence}"
+            f"tty={sys.stdin.isatty()}"
         )
         return classification_result.detected_type
-    
-    # High confidence: quick confirmation
-    if classification_result.confidence >= auto_accept_threshold:
-        logger.debug(f"High confidence ({classification_result.confidence:.2f}), showing brief menu")
     
     # Show interactive menu
     menu = MeetingTypeMenu(classification_result)

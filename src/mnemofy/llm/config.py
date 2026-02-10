@@ -112,6 +112,7 @@ def load_from_env() -> Dict[str, Any]:
         try:
             config["timeout"] = int(timeout)
         except ValueError:
+            # Silently ignore invalid timeout values
             pass
     
     # Feature flags

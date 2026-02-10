@@ -1,10 +1,8 @@
 """Tests for meeting type classification."""
 
-import pytest
 from mnemofy.classifier import (
     MeetingType,
     HeuristicClassifier,
-    ClassificationResult,
     TranscriptReference,
     GroundedItem,
 )
