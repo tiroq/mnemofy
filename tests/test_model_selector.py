@@ -17,6 +17,7 @@ from mnemofy.model_selector import (
     ModelSpec,
     filter_compatible_models,
     get_model_spec,
+    get_model_table,
     list_models,
     recommend_model,
 )
