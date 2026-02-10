@@ -23,7 +23,9 @@ A user transcribes a meeting recording and wants structured, meaningful notes th
 
 3. **Given** a finished transcript with ambiguous content (low confidence <0.5), **When** detection completes, **Then** the system shows the top 3 candidate meeting types with their confidence scores and evidence phrases.
 
-4. **Given** any detected meeting type, **When** notes are generated, **Then** every Decision and Action Item includes at least one timestamp reference connecting it to the transcript.
+4. **Given** a finished transcript with medium confidence (0.5-0.6), **When** detection completes in interactive mode, **Then** the system displays the detected type with a warning and offers the option to override before proceeding.
+
+5. **Given** any detected meeting type, **When** notes are generated, **Then** every Decision and Action Item includes at least one timestamp reference connecting it to the transcript.
 
 ---
 
@@ -136,50 +138,51 @@ A user wants transcripts to be normalized and optionally repaired (fixing ASR er
 - **FR-003**: Detection MUST output a confidence score (0.0-1.0) and evidence phrases (keywords/patterns that led to the classification).
 - **FR-004**: System MUST provide two detection modes: heuristic (default, deterministic, offline) and LLM (optional, requires configured engine).
 - **FR-005**: Heuristic detection MUST use keyword/phrase dictionaries, bigrams/trigrams, and structural markers (question density, timeline vocab, estimate vocab).
-- **FR-006**: LLM detection MUST accept a condensed transcript window (first 10-15 minutes + high-signal segments) and return structured JSON with type, confidence, evidence, and notes_focus fields.
-- **FR-007**: When confidence is low (<0.5), system MUST display top 3 candidate meeting types with scores and allow user selection in interactive mode.
+- **FR-006**: LLM detection MUST accept a condensed transcript window (first 10-15 minutes + high-signal segments) and return structured JSON with type, confidence, evidence, and notes_focus fields. High-signal segments are defined as: segments containing decision markers ("we'll", "let's", "agreed"), action items ("will do", "TODO"), or questions ("should we", "what if").
+- **FR-007**: System MUST handle three confidence ranges: (1) High confidence (≥0.6): auto-accept and proceed; (2) Medium confidence (0.5-0.6): accept top candidate with warning, allow override in interactive mode; (3) Low confidence (<0.5): display top 3 candidate types with scores and require selection in interactive mode (or default to "status" in non-interactive mode).
 
 **Template-Based Notes Generation:**
 
-- **FR-008**: System MUST map each meeting type to a predefined notes template (status.md, planning.md, design.md, etc.).
+- **FR-008**: System MUST map each meeting type to a predefined notes template (status.md, planning.md, design.md, etc.). Templates MUST be Markdown files with Jinja2-style placeholders for dynamic content.
 - **FR-009**: Every template MUST include invariant sections: Decisions, Action Items, Concrete Mentions (with timestamps), and Transcript References.
 - **FR-010**: System MUST support two notes generation modes: basic (deterministic, time-bucketed summaries + frequent keywords) and LLM (richer extraction requiring configured engine).
 - **FR-011**: LLM-generated notes MUST be grounded in transcript evidence - every Decision, Action Item, and Mention requires timestamp references (format: @t=MM:SS-MM:SS).
 - **FR-012**: LLM prompts MUST include constraints: "Use ONLY the transcript; do not invent facts" and "If unclear, mark as unclear and cite timestamp."
 - **FR-013**: System MUST mark ambiguous statements as "unclear" with status field and mandatory reason when LLM cannot confidently extract from transcript.
+- **FR-014**: Templates MUST be loaded from src/mnemofy/templates/ (bundled with package). System MUST support user overrides from ~/.config/mnemofy/templates/ (macOS/Linux) or %APPDATA%\mnemofy\templates\ (Windows), with user templates taking precedence over bundled templates.
 
 **LLM Engine Support:**
 
-- **FR-014**: System MUST support multiple LLM backends via a unified interface: OpenAI-compatible HTTP API and Ollama local instance.
-- **FR-015**: System MUST allow configuration via three sources with precedence order: CLI flags (highest) > environment variables > config file > built-in defaults.
-- **FR-016**: LLM features MUST be opt-in; tool remains fully functional without any LLM configuration (degrades to deterministic modes).
-- **FR-017**: System MUST handle missing credentials, unreachable engines, and invalid responses by falling back to deterministic behavior and displaying actionable guidance.
-- **FR-018**: LLM requests MUST include timeout handling, exponential backoff retries (max 2 retries), and deterministic settings (temperature=0) when possible.
+- **FR-015**: System MUST support multiple LLM backends via a unified interface: OpenAI-compatible HTTP API and Ollama local instance.
+- **FR-016**: System MUST allow configuration via three sources with precedence order: CLI flags (highest) > environment variables > config file > built-in defaults. API keys MUST only be read from environment variables, never from config files.
+- **FR-017**: LLM features MUST be opt-in; tool remains fully functional without any LLM configuration (degrades to deterministic modes).
+- **FR-018**: System MUST handle missing credentials, unreachable engines, and invalid responses by falling back to deterministic behavior and displaying actionable guidance.
+- **FR-019**: LLM requests MUST include timeout handling, exponential backoff retries (max 2 retries), and deterministic settings (temperature=0) when possible.
 
 **Configuration & CLI:**
 
-- **FR-019**: System MUST support CLI flags: --meeting-type (auto|status|planning|...), --template <name>, --classify (heuristic|llm|off), --llm (on|off), --llm-engine, --llm-model, --llm-base-url, --llm-timeout, --llm-retries, --no-interactive.
-- **FR-020**: System MUST support environment variables prefixed with MNEMOFY_LLM_* for engine, model, base URL, timeout, retries.
-- **FR-021**: Config file MUST be TOML format located at ~/.config/mnemofy/config.toml (macOS/Linux) or %APPDATA%\mnemofy\config.toml (Windows).
-- **FR-022**: System MUST load config from file if exists, apply env var overrides, then apply CLI flag overrides.
+- **FR-020**: System MUST support CLI flags: --meeting-type (auto|status|planning|...), --template <name>, --classify (heuristic|llm|off), --llm (on|off), --llm-engine, --llm-model, --llm-base-url, --llm-timeout, --llm-retries, --no-interactive.
+- **FR-021**: System MUST support environment variables prefixed with MNEMOFY_LLM_* for engine, model, base URL, timeout, retries. API keys MUST only be provided via environment variables (e.g., OPENAI_API_KEY, MNEMOFY_LLM_API_KEY).
+- **FR-022**: Config file MUST be TOML format located at ~/.config/mnemofy/config.toml (macOS/Linux) or %APPDATA%\mnemofy\config.toml (Windows). Config file MUST contain only non-sensitive settings (model names, base URLs, timeouts); API keys are prohibited.
+- **FR-023**: System MUST load config from file if exists, apply env var overrides, then apply CLI flag overrides.
 
 **Transcript Post-Processing (Optional):**
 
-- **FR-023**: System MUST support deterministic normalization: bounded stutter/filler reduction, sentence stitching across pauses ≤500ms, safe number/date normalization.
-- **FR-024**: System MUST support optional LLM-based transcript repair that outputs repaired text plus a changes log (before/after/reason with timestamps).
-- **FR-025**: Normalization and repair MUST preserve original meaning and never invent content.
+- **FR-024**: System MUST support deterministic normalization: bounded stutter/filler reduction, sentence stitching across pauses ≤500ms, safe number/date normalization.
+- **FR-025**: System MUST support optional LLM-based transcript repair that outputs repaired text plus a changes log (before/after/reason with timestamps).
+- **FR-026**: Normalization and repair MUST preserve original meaning and never invent content.
 
 **Output & Transparency:**
 
-- **FR-026**: System MUST output detected meeting type, confidence, evidence terms, and selected template to stdout before generating notes.
-- **FR-027**: System MUST create output files: *.notes.md (using selected template) and optionally *.meeting-type.json (detection metadata).
-- **FR-028**: When LLM is used, system MUST display engine info: engine name, model, mode (notes|classify|both).
-- **FR-029**: In verbose mode, system MUST log LLM request duration and response size.
+- **FR-027**: System MUST output detected meeting type, confidence, evidence terms, and selected template to stdout before generating notes.
+- **FR-028**: System MUST create output files: *.notes.md (using selected template) and optionally *.meeting-type.json (detection metadata).
+- **FR-029**: When LLM is used, system MUST display engine info: engine name, model, mode (notes|classify|both).
+- **FR-030**: In verbose mode, system MUST log LLM request duration and response size.
 
 **Non-Interactive Mode:**
 
-- **FR-030**: System MUST support fully non-interactive execution via --no-interactive flag or when stdin is not a TTY.
-- **FR-031**: In non-interactive mode, system MUST never prompt for user input and uses recommended/default values automatically.
+- **FR-031**: System MUST support fully non-interactive execution via --no-interactive flag or when stdin is not a TTY.
+- **FR-032**: In non-interactive mode, system MUST never prompt for user input and uses recommended/default values automatically.
 
 ### Key Entities
 
@@ -196,6 +199,15 @@ A user wants transcripts to be normalized and optionally repaired (fixing ASR er
 - **Grounded Note Item**: A Decision, Action Item, or Mention extracted from transcript. Must contain the claim text, status (confirmed or unclear), reason if unclear, and one or more transcript references with timestamps.
 
 - **Transcript Reference**: Links a note item to source transcript. Contains reference ID, start timestamp, end timestamp, speaker, and original text snippet.
+
+## Clarifications
+
+### Session 2026-02-10
+
+- Q: How should API keys for LLM providers be stored and loaded securely? → A: API keys ONLY via environment variables (never stored in config file); config file contains only non-sensitive settings like model name, base URL
+- Q: What qualifies as a "high-signal segment" for LLM-based meeting type detection? → A: Decision-focused: segments containing decision markers ("we'll", "let's", "agreed"), action items ("will do", "TODO"), questions ("should we", "what if")
+- Q: What format should notes templates use and where should they be stored? → A: Markdown files with Jinja2-style placeholders ({{ decisions }}, {% for item in action_items %}); stored in src/mnemofy/templates/; user can override in ~/.config/mnemofy/templates/
+- Q: What happens when confidence is between 0.5 and 0.6? → A: Accept the top candidate but display a warning message; in interactive mode, briefly show the detected type with option to override; in non-interactive mode, proceed automatically with warning logged
 
 ## Success Criteria *(mandatory)*
 
