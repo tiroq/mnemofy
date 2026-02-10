@@ -223,24 +223,24 @@
 
 #### Interactive Menu
 
-- [ ] T090 [US4] Create meeting type selector in src/mnemofy/tui/meeting_type_menu.py (select_meeting_type function using prompt_toolkit radiolist_dialog)
-- [ ] T091 [US4] Implement menu rendering in src/mnemofy/tui/meeting_type_menu.py (display recommended type, top 5 candidates with scores, evidence phrases)
-- [ ] T092 [US4] Add arrow key navigation in src/mnemofy/tui/meeting_type_menu.py (↑↓ to move, Enter to confirm, Esc for recommended)
-- [ ] T093 [US4] Add confidence-based menu behavior in src/mnemofy/tui/meeting_type_menu.py (high ≥0.6: brief confirm, medium 0.5-0.6: warning + override, low <0.5: multi-select)
+- [X] T090 [US4] Create meeting type selector in src/mnemofy/tui/meeting_type_menu.py (select_meeting_type function using prompt_toolkit radiolist_dialog)
+- [X] T091 [US4] Implement menu rendering in src/mnemofy/tui/meeting_type_menu.py (display recommended type, top 5 candidates with scores, evidence phrases)
+- [X] T092 [US4] Add arrow key navigation in src/mnemofy/tui/meeting_type_menu.py (↑↓ to move, Enter to confirm, Esc for recommended)
+- [X] T093 [US4] Add confidence-based menu behavior in src/mnemofy/tui/meeting_type_menu.py (high ≥0.6: brief confirm, medium 0.5-0.6: warning + override, low <0.5: multi-select)
 
 #### CLI Integration
 
-- [ ] T094 [US4] Add --no-interactive flag to src/mnemofy/cli.py (skip menu, use recommended type)
-- [ ] T095 [US4] Add TTY detection in src/mnemofy/cli.py (check stdin.isatty(), skip menu if piped or --no-interactive)
-- [ ] T096 [US4] Integrate menu into CLI workflow in src/mnemofy/cli.py (show menu after classification if interactive, before notes generation)
-- [ ] T097 [US4] Add non-interactive default behavior in src/mnemofy/cli.py (auto-accept recommended for low confidence when --no-interactive)
+- [X] T094 [US4] Add --no-interactive flag to src/mnemofy/cli.py (skip menu, use recommended type)
+- [X] T095 [US4] Add TTY detection in src/mnemofy/cli.py (check stdin.isatty(), skip menu if piped or --no-interactive)
+- [X] T096 [US4] Integrate menu into CLI workflow in src/mnemofy/cli.py (show menu after classification if interactive, before notes generation)
+- [X] T097 [US4] Add non-interactive default behavior in src/mnemofy/cli.py (auto-accept recommended for low confidence when --no-interactive)
 
 #### Testing for User Story 4
 
-- [ ] T098 [P] [US4] Add menu rendering tests in tests/test_meeting_type_menu.py (verify display format, candidate ordering)
-- [ ] T099 [P] [US4] Add menu interaction tests in tests/test_meeting_type_menu.py (simulate arrow keys, Enter, Esc)
-- [ ] T100 [P] [US4] Add TTY detection tests in tests/test_cli_integration.py (test behavior when stdin is/isn't TTY)
-- [ ] T101 [US4] Add --no-interactive flag tests in tests/test_cli_integration.py (verify menu skipped, recommended type used)
+- [X] T098 [P] [US4] Add menu rendering tests in tests/test_meeting_type_menu.py (verify display format, candidate ordering)
+- [X] T099 [P] [US4] Add menu interaction tests in tests/test_meeting_type_menu.py (simulate arrow keys, Enter, Esc)
+- [X] T100 [P] [US4] Add TTY detection tests in tests/test_meeting_type_menu.py (test behavior when stdin is/isn't TTY)
+- [X] T101 [US4] Add --no-interactive flag tests in tests/test_meeting_type_menu.py (verify menu skipped, recommended type used)
 
 **Checkpoint**: User Story 4 complete - interactive mode provides user control over automation
 
