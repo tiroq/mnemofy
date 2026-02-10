@@ -158,8 +158,8 @@ def filter_compatible_models(
         List of compatible ModelSpec instances, sorted by quality (descending)
         then by speed (descending). Empty list if no models fit.
     """
-    # Apply 85% safety margin to available RAM (0.75GB buffer on 5GB system)
-    safe_ram_gb = resources.available_ram_gb * 0.85
+    # Apply 70% safety margin to total RAM to account for system usage and other processes
+    safe_ram_gb = resources.total_ram_gb * 0.70
     
     compatible = []
     
@@ -214,7 +214,7 @@ def recommend_model(
     
     if not compatible:
         # Build error message with details
-        safe_ram_gb = resources.available_ram_gb * 0.85
+        safe_ram_gb = resources.total_ram_gb * 0.70
         vram_info = ""
         if resources.has_gpu and resources.available_vram_gb is not None:
             vram_info = f", {resources.available_vram_gb:.2f}GB VRAM"
@@ -232,7 +232,7 @@ def recommend_model(
     best_model = compatible[0]
     
     # Build reasoning string
-    safe_ram_gb = resources.available_ram_gb * 0.85
+    safe_ram_gb = resources.total_ram_gb * 0.70
     reasons = [
         f"System: {resources.cpu_cores} CPU cores, {safe_ram_gb:.2f}GB RAM available",
     ]
@@ -300,8 +300,9 @@ def get_model_table(
     table.add_column("VRAM", justify="right")
     table.add_column("Status", justify="center")
     
-    # Calculate safe RAM (85% to account for system usage)
-    safe_ram_gb = resources.available_ram_gb * 0.85
+    # Calculate safe RAM (use 70% of total RAM to account for system usage and other processes)
+    # Using total RAM instead of available RAM because available can be too conservative
+    safe_ram_gb = resources.total_ram_gb * 0.70
     safe_vram_gb = None
     if use_gpu and resources.has_gpu and resources.available_vram_gb is not None:
         safe_vram_gb = resources.available_vram_gb
