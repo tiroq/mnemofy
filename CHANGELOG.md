@@ -102,6 +102,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 --normalize                    # Apply normalization (stutter, stitching, numbers)
 --remove-fillers               # Remove filler words during normalization
 --repair                       # LLM-based ASR error repair (requires LLM engine)
+
+# Debugging & observability
+--verbose, -v                  # Enable verbose logging (shows LLM timing, detection details)
 ```
 
 ### Technical Architecture

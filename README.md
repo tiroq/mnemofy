@@ -147,6 +147,9 @@ mnemofy transcribe meeting.mp4 --notes llm --llm-engine ollama --llm-model llama
 mnemofy transcribe meeting.mp4                # Interactive menus (terminal)
 mnemofy transcribe meeting.mp4 --no-interactive  # Automation-friendly
 
+# Verbose logging (debugging & performance)
+mnemofy transcribe meeting.mp4 --verbose      # Shows LLM timing, detection details
+
 # Keep the extracted audio file
 mnemofy transcribe video.mkv --keep-audio
 ```
@@ -507,6 +510,38 @@ The default `base` model offers a good balance of speed and accuracy. Use `tiny`
   - readchar - Keyboard input for interactive menus
 
 ## Troubleshooting
+
+### Debugging with Verbose Mode
+
+Enable verbose logging with `--verbose` or `-v` to see detailed diagnostic information:
+
+```bash
+mnemofy transcribe meeting.mp4 --verbose
+```
+
+Verbose mode shows:
+- **Model selection**: System resources, compatible models, recommendation reasoning, menu latency
+- **LLM operations**: Engine initialization, request timing, response sizes
+- **Meeting type detection**: Heuristic vs LLM, confidence scores, execution time
+- **Normalization/repair**: Change counts, processing duration
+- **Interactive menus**: User selections, override decisions, interaction timing
+
+Example verbose output:
+```
+[DEBUG] System resources detected: RAM=16.0GB, GPU=available
+[DEBUG] Compatible models: ['tiny', 'base', 'small'], recommended: small
+[DEBUG] LLM engine initialized in 234ms: gpt-4o-mini
+[DEBUG] Heuristic detection: type=planning, confidence=85.0%, duration=12ms
+[DEBUG] Meeting type menu interaction took 1850ms
+[DEBUG] User accepted detected type: planning
+[DEBUG] Basic extraction: 15 items in 45ms
+```
+
+This is invaluable for:
+- Debugging LLM connectivity issues
+- Understanding performance bottlenecks
+- Validating detection accuracy
+- Troubleshooting CI/automation failures
 
 ### Model Selection Issues
 
