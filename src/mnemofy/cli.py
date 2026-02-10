@@ -1,5 +1,8 @@
 """Command-line interface for mnemofy."""
 
+import logging
+import time
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
@@ -7,6 +10,15 @@ import typer
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
+from mnemofy.artifacts import (
+    ProcessingMetadata,
+    ASREngineInfo,
+    LLMEngineInfo,
+    ProcessingConfig,
+    ArtifactManifest,
+    create_processing_metadata,
+    create_artifact_manifest,
+)
 from mnemofy.audio import AudioExtractor
 from mnemofy.classifier import HeuristicClassifier, MeetingType, extract_high_signal_segments
 from mnemofy.formatters import TranscriptFormatter
@@ -17,6 +29,7 @@ from mnemofy.model_selector import (
     get_model_table,
     list_models,
     recommend_model,
+    MODEL_SPECS,
 )
 from mnemofy.notes import (
     StructuredNotesGenerator,
@@ -35,6 +48,7 @@ app = typer.Typer(
     add_completion=False,
 )
 console = Console()
+logger = logging.getLogger(__name__)
 
 
 @app.command()
@@ -191,6 +205,9 @@ def transcribe(
     )
     logger = logging.getLogger(__name__)
     
+    # Start timing for processing metadata
+    process_start_time = datetime.now()
+    
     # Handle --list-models flag (exit early)
     if list_models_flag:
         try:
@@ -308,6 +325,51 @@ def transcribe(
 
         console.print(f"[dim]Audio file: {audio_file}[/dim]")
 
+        # Initialize LLM engine once if any LLM-backed feature is requested
+        llm_engine_instance = None
+        llm_needed = repair or classify == "llm" or notes == "llm"
+        if llm_needed:
+            logger.debug(f"LLM mode requested: classify={classify}, notes={notes}, repair={repair}")
+            try:
+                # Load configuration from file + env + CLI overrides
+                cli_overrides = {}
+                if llm_engine != "openai":  # Only override if not default
+                    cli_overrides["engine"] = llm_engine
+                if llm_model:
+                    cli_overrides["model"] = llm_model
+                if llm_base_url:
+                    cli_overrides["base_url"] = llm_base_url
+
+                logger.debug(f"Loading LLM config with CLI overrides: {cli_overrides}")
+
+                llm_config = get_llm_config(cli_overrides=cli_overrides)
+
+                logger.debug(f"Final LLM config: engine={llm_config.engine}, "
+                           f"model={llm_config.model}, timeout={llm_config.timeout}s")
+
+                # Create LLM engine using merged config
+                llm_start = time.time()
+                llm_engine_instance = get_llm_engine(
+                    engine_type=llm_config.engine,
+                    model=llm_config.model,
+                    base_url=llm_config.base_url,
+                    api_key=llm_config.api_key,
+                    timeout=llm_config.timeout
+                )
+                llm_init_duration = time.time() - llm_start
+
+                if llm_engine_instance:
+                    console.print(f"[dim]LLM engine: {llm_engine_instance.get_model_name()}[/dim]")
+                    logger.debug(f"LLM engine initialized in {llm_init_duration*1000:.0f}ms: "
+                               f"{llm_engine_instance.get_model_name()}")
+                else:
+                    console.print("[yellow]Warning:[/yellow] LLM engine unavailable, falling back to heuristic mode")
+                    logger.debug("LLM engine returned None, falling back to heuristic mode")
+            except Exception as e:
+                console.print(f"[yellow]Warning:[/yellow] LLM initialization failed: {e}")
+                console.print("[dim]Falling back to heuristic mode[/dim]")
+                logger.debug(f"LLM initialization error: {e}")
+
         # Step 3: Generate formatted transcripts
         with Progress(
             SpinnerColumn(),
@@ -378,13 +440,28 @@ def transcribe(
             detected_language = transcription.get("language") if transcription else None
             effective_language = lang or detected_language or "en"
             
-            # Prepare metadata
+            # Prepare metadata (enriched with model details)
+            model_spec = MODEL_SPECS.get(selected_model)
             metadata = {
                 "engine": "faster-whisper",
                 "model": selected_model,
                 "language": effective_language,
                 "duration": sum(s["end"] - s["start"] for s in segments),
             }
+            
+            # Add optional model specification details if available
+            if model_spec:
+                metadata["model_size_gb"] = model_spec.min_ram_gb
+                metadata["quality_rating"] = model_spec.quality_rating
+                metadata["speed_rating"] = model_spec.speed_rating
+            
+            # Add processing flags
+            if normalize or repair:
+                metadata["preprocessing"] = {
+                    "normalized": normalize,
+                    "repaired": repair,
+                    "remove_fillers": remove_fillers if normalize else False,
+                }
             
             # Generate all formats
             txt_output = TranscriptFormatter.to_txt(segments)
@@ -412,50 +489,6 @@ def transcribe(
         # Step 4: Detect meeting type (if enabled)
         classification_result = None
         detected_type = None
-        llm_engine_instance = None
-        
-        # Initialize LLM engine if LLM mode requested
-        if classify == "llm" or notes == "llm":
-            logger.debug(f"LLM mode requested: classify={classify}, notes={notes}")
-            try:
-                # Load configuration from file + env + CLI overrides
-                cli_overrides = {}
-                if llm_engine != "openai":  # Only override if not default
-                    cli_overrides["engine"] = llm_engine
-                if llm_model:
-                    cli_overrides["model"] = llm_model
-                if llm_base_url:
-                    cli_overrides["base_url"] = llm_base_url
-                
-                logger.debug(f"Loading LLM config with CLI overrides: {cli_overrides}")
-                
-                llm_config = get_llm_config(cli_overrides=cli_overrides)
-                
-                logger.debug(f"Final LLM config: engine={llm_config.engine}, "
-                           f"model={llm_config.model}, timeout={llm_config.timeout}s")
-                
-                # Create LLM engine using merged config
-                llm_start = time.time()
-                llm_engine_instance = get_llm_engine(
-                    engine_type=llm_config.engine,
-                    model=llm_config.model,
-                    base_url=llm_config.base_url,
-                    api_key=llm_config.api_key,
-                    timeout=llm_config.timeout
-                )
-                llm_init_duration = time.time() - llm_start
-                
-                if llm_engine_instance:
-                    console.print(f"[dim]LLM engine: {llm_engine_instance.get_model_name()}[/dim]")
-                    logger.debug(f"LLM engine initialized in {llm_init_duration*1000:.0f}ms: "
-                               f"{llm_engine_instance.get_model_name()}")
-                else:
-                    console.print("[yellow]Warning:[/yellow] LLM engine unavailable, falling back to heuristic mode")
-                    logger.debug("LLM engine returned None, falling back to heuristic mode")
-            except Exception as e:
-                console.print(f"[yellow]Warning:[/yellow] LLM initialization failed: {e}")
-                console.print("[dim]Falling back to heuristic mode[/dim]")
-                logger.debug(f"LLM initialization error: {e}")
         
         if classify != "off" and meeting_type == "auto":
             logger.debug(f"Meeting type detection: mode={classify}, auto-detect=True")
@@ -686,6 +719,146 @@ def transcribe(
 
             progress.update(task, description="[green]✓ Notes generated")
 
+        # Step 6: Generate metadata and artifacts manifest
+        process_end_time = datetime.now()
+        
+        # Build ASR engine info
+        model_spec = MODEL_SPECS.get(selected_model)
+        asr_info = ASREngineInfo(
+            engine="faster-whisper",
+            model=selected_model,
+            model_size_gb=model_spec.min_ram_gb if model_spec else None,
+            quality_rating=model_spec.quality_rating if model_spec else None,
+            speed_rating=model_spec.speed_rating if model_spec else None,
+        )
+        
+        # Build LLM engine info (if used)
+        llm_info = None
+        if llm_engine_instance:
+            llm_purposes = []
+            if classify == "llm":
+                llm_purposes.append("meeting_type_detection")
+            if notes == "llm":
+                llm_purposes.append("notes_generation")
+            if repair:
+                llm_purposes.append("transcript_repair")
+            
+            llm_info = LLMEngineInfo(
+                engine=llm_engine,
+                model=llm_engine_instance.get_model_name(),
+                purpose=", ".join(llm_purposes) if llm_purposes else "general",
+            )
+        
+        # Build processing config
+        proc_config = ProcessingConfig(
+            language=effective_language,
+            normalize=normalize,
+            repair=repair,
+            meeting_type=detected_type.value if detected_type else None,
+            classify_mode=classify,
+            notes_mode=notes,
+        )
+        
+        # Count words in transcript
+        transcript_text = " ".join(s["text"] for s in segments)
+        word_count = len(transcript_text.split())
+        
+        # Create processing metadata
+        proc_metadata = create_processing_metadata(
+            input_file=input_file.name,
+            asr_engine=asr_info,
+            config=proc_config,
+            start_time=process_start_time,
+            end_time=process_end_time,
+            llm_engine=llm_info,
+            language_detected=detected_language,
+            transcript_duration_seconds=metadata["duration"],
+            word_count=word_count,
+            segment_count=len(segments),
+        )
+        
+        # Save processing metadata
+        metadata_path = manager.get_metadata_path()
+        metadata_path.write_text(proc_metadata.to_json(), encoding="utf-8")
+        
+        # Create artifacts manifest
+        manifest = create_artifact_manifest(
+            input_file=input_file.name,
+            model_name=selected_model,
+        )
+        
+        # Add artifacts to manifest
+        def get_file_size(path: Path) -> int:
+            try:
+                return path.stat().st_size if path.exists() else 0
+            except Exception:
+                return 0
+        
+        # Transcript artifacts
+        manifest.add_artifact(
+            "transcript", str(txt_path.relative_to(manager.outdir)),
+            "txt", "Plain text transcript with timestamps",
+            get_file_size(txt_path), selected_model
+        )
+        manifest.add_artifact(
+            "transcript", str(srt_path.relative_to(manager.outdir)),
+            "srt", "SubRip subtitle format transcript",
+            get_file_size(srt_path), selected_model
+        )
+        manifest.add_artifact(
+            "transcript", str(json_path.relative_to(manager.outdir)),
+            "json", "Structured JSON transcript with metadata",
+            get_file_size(json_path), selected_model, "1.0"
+        )
+        
+        # Notes artifact
+        manifest.add_artifact(
+            "notes", str(output.relative_to(manager.outdir)),
+            "md", "Structured meeting notes",
+            get_file_size(output), 
+            llm_engine_instance.get_model_name() if (notes == "llm" and llm_engine_instance) else "basic_extractor"
+        )
+        
+        # Classification result (if generated)
+        if classification_result:
+            meeting_type_path = manager.outdir / f"{manager.basename}.meeting-type.json"
+            manifest.add_artifact(
+                "classification", str(meeting_type_path.relative_to(manager.outdir)),
+                "json", "Meeting type classification result",
+                get_file_size(meeting_type_path),
+                llm_engine_instance.get_model_name() if (classify == "llm" and llm_engine_instance) else "heuristic_classifier"
+            )
+        
+        # Changes log (if generated)
+        if transcript_changes:
+            changes_log_path = manager.get_changes_log_path()
+            manifest.add_artifact(
+                "log", str(changes_log_path.relative_to(manager.outdir)),
+                "md", "Transcript normalization/repair changes log",
+                get_file_size(changes_log_path),
+                llm_engine_instance.get_model_name() if repair else "normalizer"
+            )
+        
+        # Metadata artifact
+        manifest.add_artifact(
+            "metadata", str(metadata_path.relative_to(manager.outdir)),
+            "json", "Processing metadata and configuration",
+            get_file_size(metadata_path), None, "1.0"
+        )
+        
+        # Audio artifact (if kept)
+        if keep_audio:
+            audio_path = manager.get_audio_path()
+            manifest.add_artifact(
+                "audio", str(audio_path.relative_to(manager.outdir)),
+                "wav", "Extracted audio (16kHz mono WAV)",
+                get_file_size(audio_path)
+            )
+        
+        # Save artifacts manifest
+        manifest_path = manager.get_artifacts_manifest_path()
+        manifest_path.write_text(manifest.to_json(), encoding="utf-8")
+        
         # Clean up temporary audio file if needed
         if not keep_audio and audio_file != input_file:
             try:
@@ -699,9 +872,12 @@ def transcribe(
         console.print(f"  Subtitle (SRT): {srt_path}")
         console.print(f"  Structured (JSON): {json_path}")
         if classification_result:
-            meeting_type_path = manager.outdir / f"{manager.base_name}.meeting-type.json"
+            meeting_type_path = manager.outdir / f"{manager.basename}.meeting-type.json"
             console.print(f"  Meeting Type: {meeting_type_path}")
         console.print(f"  Notes: {output}")
+        console.print(f"[dim]Metadata:[/dim]")
+        console.print(f"  Processing Info: {metadata_path}")
+        console.print(f"  Artifacts Index: {manifest_path}")
 
         # Show stats
         console.print("\n[bold]Statistics:[/bold]")
