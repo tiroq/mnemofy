@@ -49,7 +49,7 @@ def transcribe(
         "-m",
         help="Whisper model to use (tiny, base, small, medium, large-v3). "
         "If not provided, auto-detects based on system resources. "
-        "Available models: " + ", ".join(list_models()),
+        "Use --list-models to see all available models.",
     ),
     auto: bool = typer.Option(
         False,
