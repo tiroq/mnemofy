@@ -13,7 +13,9 @@ import re
 from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
+
+from jinja2 import Environment, FileSystemLoader, TemplateNotFound
 
 
 class NotesMode(Enum):
@@ -41,6 +43,67 @@ def seconds_to_mmss(seconds: float) -> str:
     minutes = int(seconds // 60)
     secs = int(seconds % 60)
     return f"{minutes:02d}:{secs:02d}"
+
+
+def load_jinja_template(template_name: str, custom_dir: Optional[Path] = None) -> Any:
+    """Load a Jinja2 template from bundled templates or user override directory.
+    
+    Template search order (first match wins):
+    1. Custom directory (if provided)
+    2. User config: ~/.config/mnemofy/templates/
+    3. Bundled templates: <package>/templates/
+    
+    Args:
+        template_name: Name of template file (e.g., "status.md", "planning.md")
+        custom_dir: Optional custom template directory path
+    
+    Returns:
+        Jinja2 Template object ready for rendering
+    
+    Raises:
+        TemplateNotFound: If template not found in any search path
+        jinja2.TemplateError: If template has syntax errors
+    
+    Examples:
+        >>> template = load_jinja_template("status.md")
+        >>> output = template.render(decisions=[], actions=[], title="Daily Standup")
+        
+        >>> custom_path = Path("/custom/templates")
+        >>> template = load_jinja_template("planning.md", custom_dir=custom_path)
+    """
+    search_paths: List[Path] = []
+    
+    # 1. Custom directory (highest priority)
+    if custom_dir:
+        search_paths.append(custom_dir)
+    
+    # 2. User config directory
+    user_config = Path.home() / ".config" / "mnemofy" / "templates"
+    if user_config.exists():
+        search_paths.append(user_config)
+    
+    # 3. Bundled templates (fallback)
+    bundled_templates = Path(__file__).parent / "templates"
+    search_paths.append(bundled_templates)
+    
+    # Try each path in order
+    for search_path in search_paths:
+        try:
+            env = Environment(
+                loader=FileSystemLoader(str(search_path)),
+                autoescape=False,  # Templates are Markdown, not HTML
+                trim_blocks=True,
+                lstrip_blocks=True,
+            )
+            template = env.get_template(template_name)
+            return template
+        except TemplateNotFound:
+            continue
+    
+    # No template found in any path
+    raise TemplateNotFound(
+        f"Template '{template_name}' not found in: {', '.join(str(p) for p in search_paths)}"
+    )
 
 
 class StructuredNotesGenerator:
