@@ -10,6 +10,7 @@ This module provides:
 
 import logging
 from dataclasses import dataclass
+from io import StringIO
 from typing import TYPE_CHECKING, Dict, Optional, Tuple
 
 from rich.console import Console
@@ -370,8 +371,8 @@ def get_model_table(
         )
     
     # Convert table to string
-    console = Console()
-    with console.capture() as capture:
-        console.print(table)
+    string_buffer = StringIO()
+    console = Console(file=string_buffer, force_terminal=True, width=100)
+    console.print(table)
     
-    return capture.getvalue()
+    return string_buffer.getvalue()
