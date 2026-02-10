@@ -8,11 +8,15 @@
 
 - 🎵 **Audio Extraction**: Automatically extracts audio from video files using ffmpeg
 - 🎤 **Speech Transcription**: Fast local transcription using faster-whisper (no API keys needed)
-- 📝 **Structured Notes**: Generates Markdown notes with:
+- 🎯 **Meeting Type Detection**: Automatically detects meeting types (status, planning, design, demo, etc.)
+- 🤖 **LLM Integration**: Optional AI-enhanced notes with OpenAI or Ollama
+- 📝 **Structured Notes**: Generates type-specific Markdown notes with:
   - Topics discussed with timestamps
   - Decisions made with timestamps
   - Action items with timestamps and @mentions
   - Full transcript with timestamps
+- 🔧 **Transcript Preprocessing**: Clean transcripts with normalization and AI-powered error repair
+- 💬 **Interactive UX**: Visual menus for model and meeting type selection
 - 🎯 **Supported Formats**: aac, mp3, wav, mkv, mp4
 - 🚀 **Production Ready**: Clean modular architecture, type hints, error handling
 
@@ -123,7 +127,25 @@ mnemofy transcribe meeting.mp4 --lang fr  # French
 
 # Choose notes generation mode
 mnemofy transcribe meeting.mp4 --notes basic  # Deterministic extraction (default)
-# mnemofy transcribe meeting.mp4 --notes llm  # AI-enhanced (coming in v0.9.0)
+mnemofy transcribe meeting.mp4 --notes llm    # AI-enhanced with LLM
+
+# Meeting type detection
+mnemofy transcribe meeting.mp4 --meeting-type auto      # Auto-detect (default)
+mnemofy transcribe meeting.mp4 --meeting-type status    # Explicit type
+mnemofy transcribe meeting.mp4 --classify llm           # Use LLM for classification
+
+# Transcript preprocessing (quality improvements)
+mnemofy transcribe meeting.mp4 --normalize               # Clean stutters, fillers
+mnemofy transcribe meeting.mp4 --normalize --remove-fillers  # Remove um, uh, etc.
+mnemofy transcribe meeting.mp4 --repair --llm-engine ollama  # AI-powered error repair
+
+# LLM configuration 
+mnemofy transcribe meeting.mp4 --notes llm --llm-engine openai
+mnemofy transcribe meeting.mp4 --notes llm --llm-engine ollama --llm-model llama3.2:3b
+
+# Interactive/non-interactive modes
+mnemofy transcribe meeting.mp4                # Interactive menus (terminal)
+mnemofy transcribe meeting.mp4 --no-interactive  # Automation-friendly
 
 # Keep the extracted audio file
 mnemofy transcribe video.mkv --keep-audio
@@ -186,6 +208,179 @@ mnemofy transcribe --help
 # Show version
 mnemofy version
 ```
+
+## Meeting Type Detection
+
+mnemofy automatically detects meeting types and generates appropriate structured notes.
+
+### Supported Meeting Types
+
+1. **status** - Daily standups, status updates, progress reviews
+2. **planning** - Sprint planning, roadmap discussions, milestone planning
+3. **design** - Technical design reviews, architecture discussions
+4. **demo** - Product demos, feature showcases, customer presentations
+5. **talk** - Presentations, lectures, knowledge sharing
+6. **incident** - Postmortems, incident reviews, outage analysis
+7. **discovery** - Discovery sessions, requirement gathering, brainstorming
+8. **oneonone** - 1:1 meetings, performance reviews, career discussions
+9. **brainstorm** - Creative sessions, ideation, problem-solving workshops
+
+### Detection Modes
+
+**Automatic Detection** (default):
+```bash
+mnemofy transcribe meeting.mp4
+# ✓ Detects meeting type automatically
+# ✓ Shows confidence score
+# ✓ Interactive menu for confirmation (in terminal)
+```
+
+**Explicit Type**:
+```bash
+mnemofy transcribe meeting.mp4 --meeting-type planning
+# ✓ Uses planning template directly
+# ✓ Skips auto-detection
+```
+
+**LLM-Based Detection** (more accurate):
+```bash
+mnemofy transcribe meeting.mp4 --classify llm --llm-engine ollama
+# ✓ Uses AI for classification
+# ✓ Higher accuracy for ambiguous meetings
+# ✓ Requires LLM engine configuration
+```
+
+### Interactive Meeting Type Selection
+
+In interactive terminals, mnemofy shows a menu after detection:
+
+```
+┌─ Meeting Type Detection ──────────────────┐
+│ Confidence: 75.0% (High confidence)       │
+│                                           │
+│   Type          Score   Description       │
+│ → status ✓     75.0%    Daily standup...  │
+│   planning     65.0%    Sprint planning   │
+│   design       45.0%    Design review     │
+│                                           │
+│ Evidence: standup, updates, blockers      │
+│                                           │
+│ ↑↓ Navigate  Enter Select  Esc Recommended│
+└───────────────────────────────────────────┘
+```
+
+Use `--no-interactive` to skip menu in automation:
+```bash
+mnemofy transcribe meeting.mp4 --no-interactive
+```
+
+## LLM Integration
+
+mnemofy supports optional LLM engines for enhanced notes generation and classification.
+
+### Supported Engines
+
+1. **OpenAI API** - GPT-4o-mini, GPT-4, custom models
+2. **Ollama** - Local models (llama3.2, mistral, etc.)
+3. **OpenAI-compatible APIs** - Azure OpenAI, custom endpoints
+
+### Configuration
+
+#### Option 1: Environment Variables
+```bash
+# OpenAI
+export OPENAI_API_KEY="sk-..."
+mnemofy transcribe meeting.mp4 --notes llm
+
+# Ollama (local)
+mnemofy transcribe meeting.mp4 --notes llm --llm-engine ollama
+```
+
+#### Option 2: Configuration File
+Create `~/.config/mnemofy/config.toml`:
+```toml
+[llm]
+engine = "ollama"
+model = "llama3.2:3b"
+base_url = "http://localhost:11434"
+timeout = 60
+retries = 2
+```
+
+Then run:
+```bash
+mnemofy transcribe meeting.mp4 --notes llm
+```
+
+####Option 3: CLI Flags (highest precedence)
+```bash
+mnemofy transcribe meeting.mp4 \
+  --notes llm \
+  --llm-engine openai \
+  --llm-model gpt-4o-mini \
+  --llm-base-url https://api.openai.com/v1
+```
+
+### LLM Features
+
+**Enhanced Notes Generation**:
+- Deeper decision extraction
+- Inferred action item owners
+- Contextualized summaries
+- All claims grounded in transcript
+
+**Improved Classification**:
+- Higher accuracy for ambiguous meetings
+- Better handling of mixed-type meetings
+- Evidence-based confidence scores
+
+**Transcript Repair**:
+- Fix ASR errors automatically
+- Comprehensive change log
+- Preserves original meaning
+
+## Transcript Preprocessing
+
+Improve transcript quality before classification and notes generation.
+
+### Normalization (Deterministic)
+
+```bash
+mnemofy transcribe meeting.mp4 --normalize
+```
+
+**Features**:
+- **Stutter reduction**: "I I I think" → "I think"
+- **Sentence stitching**: Joins segments across short pauses (≤500ms)
+- **Number normalization**: "march three" → "March 3"
+- **Optional filler removal**: Removes um, uh, "you know" (with `--remove-fillers`)
+
+### LLM-Based Repair
+
+```bash
+mnemofy transcribe meeting.mp4 --repair --llm-engine ollama
+```
+
+**Features**:
+- Fixes ASR misrecognitions
+- Preserves original meaning strictly
+- Generates detailed change log (*.changes.md)
+- All changes include timestamps
+
+### Combined Preprocessing
+
+```bash
+mnemofy transcribe meeting.mp4 \
+  --normalize \
+  --remove-fillers \
+  --repair \
+  --llm-engine openai
+```
+
+**Output includes**:
+- `meeting.transcript.txt` (processed)
+- `meeting.changes.md` (change log)
+- `meeting.notes.md` (improved notes)
 
 ## Example Output
 
@@ -302,10 +497,14 @@ The default `base` model offers a good balance of speed and accuracy. Use `tiny`
 - Python 3.9-3.13 (Python 3.14+ not yet supported by dependencies)
 - ffmpeg
 - Dependencies (automatically installed):
-  - typer
-  - faster-whisper
-  - rich
-  - pydantic
+  - typer - CLI framework
+  - faster-whisper - Speech transcription
+  - rich - Terminal UI and progress displays
+  - pydantic - Data validation
+  - jinja2 - Template rendering for notes
+  - httpx - HTTP client for LLM APIs (optional)
+  - tomli - TOML config file parsing (optional)
+  - readchar - Keyboard input for interactive menus
 
 ## Troubleshooting
 
