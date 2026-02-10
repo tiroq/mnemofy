@@ -51,23 +51,23 @@
 
 #### Core Classification Engine
 
-- [ ] T011 [P] [US1] Implement heuristic meeting type detector in src/mnemofy/classifier.py (HeuristicClassifier class with detect_meeting_type method)
-- [ ] T012 [US1] Implement TF-IDF scoring logic for keywords in src/mnemofy/classifier.py (weighted term frequency with meeting-type dictionaries)
-- [ ] T013 [US1] Implement structural feature extraction in src/mnemofy/classifier.py (question density, timeline vocab, estimate markers)
-- [ ] T014 [US1] Implement confidence scoring in src/mnemofy/classifier.py (normalize top score to 0-1, calculate margin from second-place)
-- [ ] T015 [US1] Implement secondary types ranking in src/mnemofy/classifier.py (return top 5 alternatives sorted by score)
+- [X] T011 [P] [US1] Implement heuristic meeting type detector in src/mnemofy/classifier.py (HeuristicClassifier class with detect_meeting_type method)
+- [X] T012 [US1] Implement TF-IDF scoring logic for keywords in src/mnemofy/classifier.py (weighted term frequency with meeting-type dictionaries)
+- [X] T013 [US1] Implement structural feature extraction in src/mnemofy/classifier.py (question density, timeline vocab, estimate markers)
+- [X] T014 [US1] Implement confidence scoring in src/mnemofy/classifier.py (normalize top score to 0-1, calculate margin from second-place)
+- [X] T015 [US1] Implement secondary types ranking in src/mnemofy/classifier.py (return top 5 alternatives sorted by score)
 
 #### Template System
 
-- [ ] T016 [P] [US1] Create status meeting template in src/mnemofy/templates/status.md
-- [ ] T017 [P] [US1] Create planning meeting template in src/mnemofy/templates/planning.md
-- [ ] T018 [P] [US1] Create design meeting template in src/mnemofy/templates/design.md
-- [ ] T019 [P] [US1] Create demo meeting template in src/mnemofy/templates/demo.md
-- [ ] T020 [P] [US1] Create talk meeting template in src/mnemofy/templates/talk.md
-- [ ] T021 [P] [US1] Create incident meeting template in src/mnemofy/templates/incident.md
-- [ ] T022 [P] [US1] Create discovery meeting template in src/mnemofy/templates/discovery.md
-- [ ] T023 [P] [US1] Create oneonone meeting template in src/mnemofy/templates/oneonone.md
-- [ ] T024 [P] [US1] Create brainstorm meeting template in src/mnemofy/templates/brainstorm.md
+- [X] T016 [P] [US1] Create status meeting template in src/mnemofy/templates/status.md
+- [X] T017 [P] [US1] Create planning meeting template in src/mnemofy/templates/planning.md
+- [X] T018 [P] [US1] Create design meeting template in src/mnemofy/templates/design.md
+- [X] T019 [P] [US1] Create demo meeting template in src/mnemofy/templates/demo.md
+- [X] T020 [P] [US1] Create talk meeting template in src/mnemofy/templates/talk.md
+- [X] T021 [P] [US1] Create incident meeting template in src/mnemofy/templates/incident.md
+- [X] T022 [P] [US1] Create discovery meeting template in src/mnemofy/templates/discovery.md
+- [X] T023 [P] [US1] Create oneonone meeting template in src/mnemofy/templates/oneonone.md
+- [X] T024 [P] [US1] Create brainstorm meeting template in src/mnemofy/templates/brainstorm.md
 
 #### Basic Notes Generation
 
