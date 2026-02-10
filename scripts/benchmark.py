@@ -127,13 +127,14 @@ def benchmark_normalization():
     from mnemofy.transcriber import Transcriber
     
     # Create sample transcription with typical issues
-    sample_text = """
-    So um, I think we should like, you know, uh, probably consider the the the
-    database migration. Um, we could you know use PostgreSQL right? And uh,
-    like we need to to to think about the, um, performance implications.
-    """ * 20  # Repeat to simulate typical transcript length
+    sample_text = (
+        "So um, I think we should like, you know, uh, probably consider the the the "
+        "database migration. Um, we could you know use PostgreSQL right? And uh, "
+        "like we need to to to think about the, um, performance implications. "
+        "We discussed in the the meeting. You know, it's it's gonna be tough. "
+    ) * 10  # Repeat to simulate typical transcript length
     
-    transcription = {"text": sample_text}
+    transcription = {"text": sample_text, "segments": []}
     transcriber = Transcriber(model_name="base")
     
     # Warmup
@@ -141,17 +142,18 @@ def benchmark_normalization():
     
     # Benchmark
     times = []
+    change_counts = []
     for _ in range(10):
         start = time.time()
         result = transcriber.normalize_transcript(transcription, remove_fillers=True)
         duration = time.time() - start
         times.append(duration * 1000)  # Convert to ms
+        change_counts.append(len(result.changes))
     
     avg_time = sum(times) / len(times)
     max_time = max(times)
     min_time = min(times)
-    
-    change_count = len(result.changes)
+    avg_changes = sum(change_counts) / len(change_counts)
     
     print("\n" + "="*60)
     print("BENCHMARK: Transcript Normalization")
@@ -161,8 +163,8 @@ def benchmark_normalization():
     print(f"Average: {avg_time:.1f}ms")
     print(f"Min: {min_time:.1f}ms")
     print(f"Max: {max_time:.1f}ms")
-    print(f"Changes applied: {change_count}")
-    print(f"Throughput: {len(sample_text) / avg_time * 1000:.0f} chars/sec")
+    print(f"Avg changes: {avg_changes:.0f}")
+    print(f"Throughput: {len(sample_text) / (avg_time/1000):.0f} chars/sec")
     
     return True
 
