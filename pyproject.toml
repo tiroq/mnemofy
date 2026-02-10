@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mnemofy"
-version = "0.9.3"
+version = "0.9.5"
 description = "Extract audio from media files, transcribe speech, and produce documented meeting notes"
 readme = "README.md"
 requires-python = ">=3.9,<3.15"
