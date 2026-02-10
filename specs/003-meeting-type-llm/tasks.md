@@ -17,10 +17,10 @@
 
 **Purpose**: Project initialization and dependencies
 
-- [ ] T001 Add new dependencies to pyproject.toml (jinja2>=3.1.0, httpx>=0.25.0, tomli>=2.0.0; tomli-w>=1.0.0)
-- [ ] T002 [P] Create src/mnemofy/templates/ directory for Jinja2 templates
-- [ ] T003 [P] Create src/mnemofy/llm/ directory for LLM engine modules
-- [ ] T004 Install/verify prompt_toolkit dependency (already used in project)
+- [X] T001 Add new dependencies to pyproject.toml (jinja2>=3.1.0, httpx>=0.25.0, tomli>=2.0.0; tomli-w>=1.0.0)
+- [X] T002 [P] Create src/mnemofy/templates/ directory for Jinja2 templates
+- [X] T003 [P] Create src/mnemofy/llm/ directory for LLM engine modules
+- [X] T004 Install/verify prompt_toolkit dependency (already used in project)
 
 ---
 
@@ -30,12 +30,12 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T005 Create MeetingType enum/config in src/mnemofy/classifier.py (9 types: status, planning, design, demo, talk, incident, discovery, oneonone, brainstorm)
-- [ ] T006 [P] Define meeting type keyword dictionaries in src/mnemofy/classifier.py (heuristic detection data)
-- [ ] T007 [P] Create Jinja2 template loader utility in src/mnemofy/notes.py (handles bundled + user override paths ~/.config/mnemofy/templates/)
-- [ ] T008 Create TranscriptReference dataclass in src/mnemofy/classifier.py (reference_id, start_time, end_time, speaker, text_snippet)
-- [ ] T009 Create GroundedItem dataclass in src/mnemofy/classifier.py (text, status, reason, references, item_type, metadata)
-- [ ] T010 Create ClassificationResult dataclass in src/mnemofy/classifier.py (detected_type, confidence, evidence, secondary_types, engine, timestamp)
+- [X] T005 Create MeetingType enum/config in src/mnemofy/classifier.py (9 types: status, planning, design, demo, talk, incident, discovery, oneonone, brainstorm)
+- [X] T006 [P] Define meeting type keyword dictionaries in src/mnemofy/classifier.py (heuristic detection data)
+- [X] T007 [P] Create Jinja2 template loader utility in src/mnemofy/notes.py (handles bundled + user override paths ~/.config/mnemofy/templates/)
+- [X] T008 Create TranscriptReference dataclass in src/mnemofy/classifier.py (reference_id, start_time, end_time, speaker, text_snippet)
+- [X] T009 Create GroundedItem dataclass in src/mnemofy/classifier.py (text, status, reason, references, item_type, metadata)
+- [X] T010 Create ClassificationResult dataclass in src/mnemofy/classifier.py (detected_type, confidence, evidence, secondary_types, engine, timestamp)
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
