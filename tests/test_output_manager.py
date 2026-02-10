@@ -489,3 +489,30 @@ class TestOutputManagerEdgeCases:
         
         manager = OutputManager(input_file)
         assert manager.basename == "123456"
+
+class TestOutputManagerErrorCases:
+    """Test error handling edge cases for complete coverage."""
+    
+    def test_oserror_during_mkdir(self, tmp_path):
+        """Test OSError raised during directory creation."""
+        from unittest.mock import patch
+        
+        input_file = tmp_path / "video.mp4"
+        input_file.touch()
+        
+        # Mock mkdir to raise OSError
+        with patch.object(Path, "mkdir", side_effect=OSError("Disk error")):
+            with pytest.raises(ValueError, match="Cannot create output directory"):
+                OutputManager(input_file, outdir="/some/nonexistent/path")
+    
+    def test_permission_error_during_mkdir(self, tmp_path):
+        """Test PermissionError raised during directory creation."""
+        from unittest.mock import patch
+        
+        input_file = tmp_path / "video.mp4"
+        input_file.touch()
+        
+        # Mock mkdir to raise PermissionError
+        with patch.object(Path, "mkdir", side_effect=PermissionError("No access")):
+            with pytest.raises(PermissionError, match="Cannot create output directory"):
+                OutputManager(input_file, outdir="/root/forbidden")
