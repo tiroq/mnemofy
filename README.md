@@ -17,6 +17,8 @@
   - Full transcript with timestamps
 - 🔧 **Transcript Preprocessing**: Clean transcripts with normalization and AI-powered error repair
 - 💬 **Interactive UX**: Visual menus for model and meeting type selection
+- 📊 **Model-Aware Artifacts**: Enriched metadata tracking which models generated each artifact
+- 🗂️ **Processing Metadata**: Complete audit trail of processing pipeline and configuration
 - 🎯 **Supported Formats**: aac, mp3, wav, mkv, mp4
 - 🚀 **Production Ready**: Clean modular architecture, type hints, error handling
 
@@ -156,14 +158,16 @@ mnemofy transcribe video.mkv --keep-audio
 
 ## Output Files
 
-mnemofy generates **4 output files** from each transcription:
+mnemofy generates **multiple output files** from each transcription:
 
 ```
 meeting.mp4  (input)
-├── meeting.transcript.txt   # Timestamped plain text
-├── meeting.transcript.srt   # SubRip subtitle format  
-├── meeting.transcript.json  # Structured JSON with metadata
-└── meeting.notes.md         # Structured meeting notes
+├── meeting.transcript.txt      # Timestamped plain text
+├── meeting.transcript.srt      # SubRip subtitle format  
+├── meeting.transcript.json     # Structured JSON with enriched metadata
+├── meeting.notes.md            # Structured meeting notes
+├── meeting.metadata.json       # Processing metadata (NEW)
+└── meeting.artifacts.json      # Artifacts index (NEW)
 ```
 
 ### File Descriptions
@@ -176,13 +180,30 @@ meeting.mp4  (input)
    - Format: Standard SRT (sequence number, timing, text)
    - Best for: Video subtitles in VLC, subtitle editors
    
-3. **`.transcript.json`** - Structured JSON
-   - Contains: Metadata (engine, model, language) + segments
+3. **`.transcript.json`** - Structured JSON with enriched metadata
+   - Contains: Metadata (engine, model, language, quality/speed ratings) + segments
+   - Includes: Model specs, word count, segment count, preprocessing flags
    - Best for: Programmatic access, data analysis
    
 4. **`.notes.md`** - Structured meeting notes
    - Sections: Metadata, Topics, Decisions, Actions, Mentions, Risks, File Links
    - Best for: Quick review, sharing with team
+
+5. **`.metadata.json`** - Processing metadata (NEW 📊)
+   - ASR model: name, size, quality/speed ratings
+   - LLM model: name, purpose (if used)
+   - Configuration: language, flags, meeting type
+   - Timing: start, end, duration
+   - Statistics: word count, segments, transcript duration
+   - Best for: Audit trails, cost tracking, reproducibility
+   
+6. **`.artifacts.json`** - Artifacts index (NEW 🗂️)
+   - Index of all generated files
+   - Model used for each artifact
+   - File sizes and descriptions
+   - Best for: Automation, workflows, batch processing
+
+See [docs/MODEL_AWARE_ARTIFACTS.md](docs/MODEL_AWARE_ARTIFACTS.md) for detailed metadata documentation.
 
 ### Output Location
 
@@ -192,6 +213,8 @@ By default, files are created in the **same directory as the input file**:
 mnemofy transcribe ~/Videos/meeting.mp4
 # Creates: ~/Videos/meeting.transcript.{txt,srt,json}
 #          ~/Videos/meeting.notes.md
+#          ~/Videos/meeting.metadata.json
+#          ~/Videos/meeting.artifacts.json
 ```
 
 Use `--outdir` to specify a different location:
@@ -200,6 +223,7 @@ Use `--outdir` to specify a different location:
 mnemofy transcribe meeting.mp4 --outdir ./transcripts/
 # Creates: ./transcripts/meeting.transcript.{txt,srt,json}
 #          ./transcripts/meeting.notes.md
+#          ./transcripts/meeting.{metadata,artifacts}.json
 ```
 
 ### Get Help
