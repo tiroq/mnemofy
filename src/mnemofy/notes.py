@@ -14,8 +14,11 @@ from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+import uuid
 
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound
+
+from mnemofy.classifier import TranscriptReference, GroundedItem, MeetingType
 
 
 class NotesMode(Enum):
