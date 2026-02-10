@@ -1,6 +1,5 @@
 """Command-line interface for mnemofy."""
 
-import sys
 from pathlib import Path
 from typing import Optional
 
@@ -10,6 +9,7 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from mnemofy.audio import AudioExtractor
 from mnemofy.model_selector import (
+    ModelSelectionError,
     get_model_table,
     list_models,
     recommend_model,
@@ -29,9 +29,9 @@ console = Console()
 
 @app.command()
 def transcribe(
-    input_file: Path = typer.Argument(
-        ...,
-        help="Path to audio or video file (aac, mp3, wav, mkv, mp4)",
+    input_file: Optional[Path] = typer.Argument(
+        None,
+        help="Path to audio or video file (aac, mp3, wav, mkv, mp4). Not required when using --list-models.",
         exists=True,
         file_okay=True,
         dir_okay=False,
@@ -98,12 +98,10 @@ def transcribe(
     """
     import logging
     
-    logger = logging.getLogger(__name__)
-    
     # Handle --list-models flag (exit early)
     if list_models_flag:
         try:
-            resources = detect_system_resources()
+            resources = detect_system_resources(no_gpu=no_gpu)
             table = get_model_table(resources, use_gpu=not no_gpu)
             console.print(table)
             raise typer.Exit(0)
@@ -114,6 +112,11 @@ def transcribe(
             for model_name in list_models():
                 console.print(f"  • {model_name}")
             raise typer.Exit(0)
+    
+    # Validate input_file is provided when not using --list-models
+    if input_file is None:
+        console.print("[red]Error:[/red] INPUT_FILE is required when not using --list-models")
+        raise typer.Exit(1)
     
     # Model selection flow
     selected_model = None
@@ -158,8 +161,17 @@ def transcribe(
                 mode = "auto-selected"
                 console.print(f"[dim]{mode.capitalize()}: {recommended.name} ({reasoning})[/dim]")
                 
+        except ModelSelectionError as e:
+            # No compatible models found - this is a critical error
+            console.print(f"[red]Error:[/red] {e}")
+            console.print("[red]No compatible models found for your system.[/red]")
+            console.print("\nPossible solutions:")
+            console.print("  • Free up more RAM and try again")
+            console.print("  • Manually specify a smaller model with --model tiny")
+            console.print("  • Use --no-gpu to force CPU-only mode")
+            raise typer.Exit(1)
         except Exception as e:
-            console.print(f"[yellow]Warning:[/yellow] {e}")
+            console.print(f"[yellow]Warning:[/yellow] Resource detection failed: {e}")
             console.print("[yellow]Falling back to 'base' model[/yellow]")
             selected_model = "base"
     

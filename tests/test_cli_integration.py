@@ -9,10 +9,7 @@ Tests cover:
 - Error handling and fallbacks
 """
 
-import sys
-from io import StringIO
-from pathlib import Path
-from unittest.mock import Mock, MagicMock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 from typer.testing import CliRunner
@@ -121,7 +118,7 @@ class TestExplicitModelOverride:
                     mock_transcriber_instance.get_segments.return_value = []
                     
                     with patch("mnemofy.cli.NoteGenerator"):
-                        result = runner.invoke(
+                        runner.invoke(
                             app,
                             ["transcribe", str(test_audio_file), "--model", "tiny"],
                             catch_exceptions=False,
@@ -201,7 +198,7 @@ class TestAutoSelection:
                                 mock_transcriber_instance.transcribe.return_value = Mock(text="test")
                                 mock_transcriber_instance.get_segments.return_value = []
                                 
-                                result = runner.invoke(
+                                runner.invoke(
                                     app,
                                     ["transcribe", str(test_audio_file), "--auto"],
                                     catch_exceptions=False,
@@ -236,7 +233,7 @@ class TestAutoSelection:
                                 mock_transcriber_instance.transcribe.return_value = Mock(text="test")
                                 mock_transcriber_instance.get_segments.return_value = []
                                 
-                                result = runner.invoke(
+                                runner.invoke(
                                     app,
                                     ["transcribe", str(test_audio_file)],
                                     catch_exceptions=False,
@@ -303,7 +300,7 @@ class TestNoGPUFlag:
                             mock_transcriber_instance.transcribe.return_value = Mock(text="test")
                             mock_transcriber_instance.get_segments.return_value = []
                             
-                            result = runner.invoke(
+                            runner.invoke(
                                 app,
                                 ["transcribe", str(test_audio_file), "--no-gpu"],
                                 catch_exceptions=False,
@@ -347,7 +344,7 @@ class TestInteractiveSelection:
                                 mock_transcriber_instance.transcribe.return_value = Mock(text="test")
                                 mock_transcriber_instance.get_segments.return_value = []
                                 
-                                result = runner.invoke(
+                                runner.invoke(
                                     app,
                                     ["transcribe", str(test_audio_file)],
                                     catch_exceptions=False,
@@ -404,7 +401,7 @@ class TestFlagCombinations:
                         mock_transcriber_instance.transcribe.return_value = Mock(text="test")
                         mock_transcriber_instance.get_segments.return_value = []
                         
-                        result = runner.invoke(
+                        runner.invoke(
                             app,
                             [
                                 "transcribe",

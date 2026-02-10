@@ -38,8 +38,9 @@ class ModelSpec:
         min_vram_gb: Minimum VRAM required for GPU inference (float, GB).
                     None for models that don't support GPU or use unified memory.
         speed_rating: Relative transcription speed (1=slowest, 5=fastest/real-time)
-        quality_rating: Relative accuracy/quality (1=lowest WER, 5=highest WER).
-                       Based on Word Error Rate (WER) benchmark performance.
+        quality_rating: Relative accuracy/quality (1=lowest quality / highest WER,
+                       5=highest quality / lowest WER). Based on Word Error Rate (WER)
+                       benchmark performance.
         description: Human-readable description of model characteristics and use cases
     
     Notes:

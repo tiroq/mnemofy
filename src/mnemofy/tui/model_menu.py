@@ -30,9 +30,13 @@ def is_interactive_environment() -> bool:
     Returns:
         bool: True if interactive terminal, False otherwise
     """
-    is_interactive = sys.stdin.isatty() and sys.stdout.isatty()
-    logger.debug(f"Interactive environment check: stdin.isatty()={sys.stdin.isatty()}, " 
-                f"stdout.isatty()={sys.stdout.isatty()}, result={is_interactive}")
+    stdin_tty = sys.stdin.isatty()
+    stdout_tty = sys.stdout.isatty()
+    is_interactive = stdin_tty and stdout_tty
+    logger.debug(
+        f"Interactive environment check: stdin.isatty()={stdin_tty}, "
+        f"stdout.isatty()={stdout_tty}, result={is_interactive}"
+    )
     return is_interactive
 
 
@@ -160,7 +164,7 @@ class ModelMenu:
             if self.resources.has_gpu:
                 if self.resources.gpu_type == "metal":
                     resources_text += " | Metal GPU (unified memory)"
-                elif self.resources.available_vram_gb:
+                elif self.resources.available_vram_gb is not None:
                     resources_text += f" | {self.resources.gpu_type} GPU ({self.resources.available_vram_gb:.1f}GB VRAM)"
             self.console.print(resources_text)
             self.console.print()
@@ -193,7 +197,7 @@ class ModelMenu:
             if self.resources:
                 safe_ram = self.resources.available_ram_gb * 0.85
                 if model.min_ram_gb > safe_ram:
-                    ram_text = f"[red]{ram_text} [⚠][/red]"  # Warning if won't fit
+                    ram_text = f"[red]{ram_text} ⚠[/red]"  # Warning if won't fit
                 elif model.min_ram_gb > self.resources.available_ram_gb * 0.7:
                     ram_text = f"[yellow]{ram_text}[/yellow]"  # Caution if tight
             

@@ -686,6 +686,7 @@ class TestGetModelTable:
         # (1.1 - 1.0) / 1.0 = 0.1 = 10% < 20%
         table_content = table.lower()
         has_risky = "risky" in table_content or "⚠" in table
+        assert has_risky, "Expected risky status indicator for low safety margin"
 
     def test_get_model_table_incompatible_status(self):
         """Test incompatible status when no resources available."""
