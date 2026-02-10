@@ -45,6 +45,11 @@ class TestHeuristicClassifier:
         Yesterday I finished the authentication module.
         Today I'm working on the API integration.
         I'm blocked on the database migration - need help from DevOps.
+        Sarah, what's your status? I completed the UI mockups yesterday.
+        Today I'm implementing the new dashboard. No blockers on my end.
+        John, your update? In progress on the testing framework.
+        Yesterday I set up CI/CD pipeline, today continuing tests.
+        My blocker is the test data - waiting for the data team.
         """
         
         classifier = HeuristicClassifier()
