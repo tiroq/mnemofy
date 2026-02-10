@@ -61,7 +61,7 @@ A user wants to use their preferred LLM provider (OpenAI, enterprise API gateway
 
 1. **Given** no LLM configuration exists, **When** the user tries to enable LLM mode, **Then** the system provides clear guidance on how to configure an LLM engine (config file path, environment variables, CLI flags).
 
-2. **Given** a user configures OpenAI credentials via environment variable, **When** they generate notes with LLM mode, **Then** the system uses OpenAI API and displays engine info (engine=openai, model=gpt-4.1-mini).
+2. **Given** a user configures OpenAI credentials via environment variable, **When** they generate notes with LLM mode, **Then** the system uses OpenAI API and displays engine info (engine=openai, model=gpt-4o-mini or user-specified model).
 
 3. **Given** a user configures Ollama via config file, **When** they generate notes, **Then** the system connects to the Ollama local instance and uses the specified model.
 
@@ -154,7 +154,7 @@ A user wants transcripts to be normalized and optionally repaired (fixing ASR er
 **LLM Engine Support:**
 
 - **FR-015**: System MUST support multiple LLM backends via a unified interface: OpenAI-compatible HTTP API and Ollama local instance.
-- **FR-016**: System MUST allow configuration via three sources with precedence order: CLI flags (highest) > environment variables > config file > built-in defaults. API keys MUST only be read from environment variables, never from config files.
+- **FR-016**: System MUST allow configuration via three sources with precedence order: CLI flags (highest) > environment variables > config file > built-in defaults. API keys MUST only be read from environment variables, never from config files. Built-in defaults: OpenAI uses gpt-4o-mini, Ollama uses llama3.2:3b.
 - **FR-017**: LLM features MUST be opt-in; tool remains fully functional without any LLM configuration (degrades to deterministic modes).
 - **FR-018**: System MUST handle missing credentials, unreachable engines, and invalid responses by falling back to deterministic behavior and displaying actionable guidance.
 - **FR-019**: LLM requests MUST include timeout handling, exponential backoff retries (max 2 retries), and deterministic settings (temperature=0) when possible.
@@ -194,7 +194,7 @@ A user wants transcripts to be normalized and optionally repaired (fixing ASR er
 
 - **Classification Result**: Output of meeting type detection. Contains detected type, confidence score (0.0-1.0), evidence phrases (list of keywords/patterns), optional secondary types, and detection engine used (heuristic or llm).
 
-- **LLM Configuration**: Settings for LLM backend. Contains engine type (openai, ollama, openai_compat), model name, base URL, API key source (env var name), timeout, retry count, temperature.
+- **LLM Configuration**: Settings for LLM backend. Contains engine type (openai, ollama, openai_compat), model name, base URL, API key source (env var name), timeout, retry count, temperature. Default models: gpt-4o-mini (OpenAI), llama3.2:3b (Ollama).
 
 - **Grounded Note Item**: A Decision, Action Item, or Mention extracted from transcript. Must contain the claim text, status (confirmed or unclear), reason if unclear, and one or more transcript references with timestamps.
 
@@ -208,6 +208,7 @@ A user wants transcripts to be normalized and optionally repaired (fixing ASR er
 - Q: What qualifies as a "high-signal segment" for LLM-based meeting type detection? → A: Decision-focused: segments containing decision markers ("we'll", "let's", "agreed"), action items ("will do", "TODO"), questions ("should we", "what if")
 - Q: What format should notes templates use and where should they be stored? → A: Markdown files with Jinja2-style placeholders ({{ decisions }}, {% for item in action_items %}); stored in src/mnemofy/templates/; user can override in ~/.config/mnemofy/templates/
 - Q: What happens when confidence is between 0.5 and 0.6? → A: Accept the top candidate but display a warning message; in interactive mode, briefly show the detected type with option to override; in non-interactive mode, proceed automatically with warning logged
+- Q: What default LLM models should be used when users don't explicitly configure one? → A: gpt-4o-mini, llama3.2:3b
 
 ## Success Criteria *(mandatory)*
 
