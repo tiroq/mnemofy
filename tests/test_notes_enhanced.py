@@ -1,6 +1,5 @@
 """Tests for StructuredNotesGenerator and helper functions."""
 
-import json
 import pytest
 from mnemofy.notes import (
     StructuredNotesGenerator,

@@ -9,7 +9,6 @@ and error handling across outputs.
 """
 
 import json
-import math
 from typing import Any, Dict, List, Optional
 
 
@@ -45,11 +44,24 @@ def seconds_to_hms(seconds: float, format: str = "srt") -> str:
     hours = int(seconds // 3600)
     minutes = int((seconds % 3600) // 60)
     secs = int(seconds % 60)
-    millis = int(round((seconds % 1) * 1000))
     
     if format == "txt":
         return f"{hours:02d}:{minutes:02d}:{secs:02d}"
     elif format == "srt":
+        # For SRT, handle milliseconds with proper normalization to avoid overflow
+        millis = int(round((seconds % 1) * 1000))
+        
+        # Normalize if rounding produced 1000 milliseconds
+        if millis == 1000:
+            millis = 0
+            secs += 1
+            if secs == 60:
+                secs = 0
+                minutes += 1
+                if minutes == 60:
+                    minutes = 0
+                    hours += 1
+        
         return f"{hours:02d}:{minutes:02d}:{secs:02d},{millis:03d}"
     else:
         raise ValueError(f"Unknown format: {format}")

@@ -4,8 +4,6 @@ Tests the full workflow: input file → audio extraction → transcription →
 multiple output formats (TXT, SRT, JSON, notes MD).
 """
 
-from pathlib import Path
-from unittest.mock import Mock, patch
 import json
 import pytest
 

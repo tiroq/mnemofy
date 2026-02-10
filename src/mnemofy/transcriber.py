@@ -25,12 +25,14 @@ class Transcriber:
             # Use CPU with int8 for efficiency
             self.model = WhisperModel(self.model_name, device="cpu", compute_type="int8")
 
-    def transcribe(self, audio_file: Path) -> dict[str, Any]:
+    def transcribe(self, audio_file: Path, language: str | None = None) -> dict[str, Any]:
         """
         Transcribe audio file.
 
         Args:
             audio_file: Path to audio file (WAV format recommended)
+            language: Language code for transcription (e.g., 'en', 'es'). 
+                     If None, language is auto-detected.
 
         Returns:
             Dictionary containing transcription results with segments
@@ -49,6 +51,7 @@ class Transcriber:
             segments, info = self.model.transcribe(
                 str(audio_file),
                 word_timestamps=True,
+                language=language,
             )
             
             # Convert faster-whisper format to openai-whisper compatible format

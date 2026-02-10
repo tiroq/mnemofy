@@ -13,7 +13,7 @@ import re
 from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 
 class NotesMode(Enum):
@@ -121,12 +121,14 @@ class StructuredNotesGenerator:
         self,
         segments: List[Dict[str, Any]],
         metadata: Dict[str, Any],
+        include_audio: bool = True,
     ) -> str:
         """Generate structured notes markdown.
         
         Args:
             segments: List of transcript segments with start, end, text.
             metadata: Transcription metadata (engine, model, language, duration, etc.).
+            include_audio: Whether to include audio file link in transcript files section.
         
         Returns:
             str: Markdown notes with 7 sections.
@@ -179,7 +181,7 @@ class StructuredNotesGenerator:
         sections.append(self._extract_action_items(segments))
         sections.append(self._extract_concrete_mentions(segments))
         sections.append(self._extract_risks_and_questions(segments))
-        sections.append(self._generate_transcript_links(metadata))
+        sections.append(self._generate_transcript_links(metadata, include_audio))
 
         return "\n".join(sections)
 
@@ -390,8 +392,12 @@ class StructuredNotesGenerator:
 
         return "\n".join(sections)
 
-    def _generate_transcript_links(self, metadata: Dict[str, Any]) -> str:
+    def _generate_transcript_links(self, metadata: Dict[str, Any], include_audio: bool = True) -> str:
         """Generate transcript file links section.
+        
+        Args:
+            metadata: Transcription metadata containing input_file.
+            include_audio: Whether to include audio file link.
         
         Note: Uses placeholder filenames based on input filename.
         Actual file generation is handled by OutputManager + formatters.
@@ -408,8 +414,11 @@ class StructuredNotesGenerator:
             f"- **Full Transcript (TXT)**: {basename}.transcript.txt",
             f"- **Subtitle Format (SRT)**: {basename}.transcript.srt",
             f"- **Structured Data (JSON)**: {basename}.transcript.json",
-            f"- **Audio (WAV)**: {basename}.mnemofy.wav",
         ]
+        
+        if include_audio:
+            lines.append(f"- **Audio (WAV)**: {basename}.mnemofy.wav")
+        
         return "\n".join(lines)
 
 

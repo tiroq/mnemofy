@@ -51,6 +51,8 @@ class OutputManager:
         input_path = Path(input_path).expanduser().resolve()
         if not input_path.exists():
             raise FileNotFoundError(f"Input file not found: {input_path}")
+        if input_path.is_dir():
+            raise ValueError(f"Input path is a directory, not a file: {input_path}")
         
         self._input_path = input_path
         self._basename = input_path.stem  # filename without extension
@@ -91,6 +93,10 @@ class OutputManager:
                 raise PermissionError(f"Cannot create output directory: {self._outdir}") from e
             except OSError as e:
                 raise ValueError(f"Cannot create output directory: {self._outdir}") from e
+            
+            # Validate writability after creation
+            if not os.access(self._outdir, os.W_OK):
+                raise PermissionError(f"Output directory is not writable after creation: {self._outdir}")
     
     def get_audio_path(self) -> Path:
         """Get path for extracted audio file.
