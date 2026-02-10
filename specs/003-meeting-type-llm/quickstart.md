@@ -84,12 +84,13 @@ For richer, more nuanced notes with inferred context and subtle decisions, enabl
 export OPENAI_API_KEY="sk-..."
 
 # Run with LLM-enhanced notes
-mnemofy meeting.mp3 --llm
+mnemofy meeting.mp3 --notes llm
 
 # Output shows:
-# [llm] Using engine=openai, model=gpt-4o-mini
-# [llm] Classification: planning (confidence: 0.85)
-# [llm] Generating enhanced notes...
+# [dim]LLM engine: gpt-4o-mini[/dim]
+# [bold]Detected Meeting Type:[/bold] planning
+# [dim]Confidence: 85.0% (Heuristic)[/dim]
+# [dim]Notes extracted using LLM[/dim]
 ```
 
 #### Option 2: Ollama (Local, Private)
@@ -100,12 +101,13 @@ mnemofy meeting.mp3 --llm
 ollama pull llama3.2:3b
 
 # 3. Run with local LLM:
-mnemofy meeting.mp3 --llm --llm-engine ollama --llm-model llama3.2:3b
+mnemofy meeting.mp3 --notes llm --llm-engine ollama --llm-model llama3.2:3b
 
 # Output shows:
-# [llm] Using engine=ollama, model=llama3.2:3b
-# [llm] Classification: status (confidence: 0.78)
-# [llm] Generating enhanced notes...
+# [dim]LLM engine: llama3.2:3b[/dim]
+# [bold]Detected Meeting Type:[/bold] status
+# [dim]Confidence: 78.0% (Heuristic)[/dim]
+# [dim]Notes extracted using LLM[/dim]
 ```
 
 ### Configuration File (Optional)
@@ -129,7 +131,7 @@ Then simply run:
 
 ```bash
 export OPENAI_API_KEY="sk-..."  # Still required for API key
-mnemofy meeting.mp3 --llm
+mnemofy meeting.mp3 --notes llm
 ```
 
 **Security Note**: Never put API keys in config files. Always use environment variables.
@@ -141,17 +143,17 @@ mnemofy meeting.mp3 --llm
 You can use LLM for just classification or just notes generation, or both:
 
 ```bash
-# LLM classification + LLM notes (default when --llm is used)
-mnemofy meeting.mp3 --llm
+# LLM classification + LLM notes
+mnemofy meeting.mp3 --classify llm --notes llm
 
-# Heuristic classification + LLM notes
-mnemofy meeting.mp3 --classify heuristic --llm
+# Heuristic classification + LLM notes (recommended for speed)
+mnemofy meeting.mp3 --notes llm
 
 # LLM classification + basic (deterministic) notes
 mnemofy meeting.mp3 --classify llm
 
 # Disable classification (use explicit type), enable LLM notes
-mnemofy meeting.mp3 --meeting-type planning --llm
+mnemofy meeting.mp3 --meeting-type planning --notes llm
 ```
 
 ---
@@ -291,7 +293,7 @@ cat meeting.meeting-type.json | jq
 
 ```bash
 for file in meetings/*.mp3; do
-  mnemofy "$file" --no-interactive --llm
+  mnemofy "$file" --no-interactive --notes llm
 done
 ```
 
@@ -299,7 +301,7 @@ done
 
 ```bash
 mnemofy meeting.mp3 \
-  --llm \
+  --notes llm \
   --llm-engine openai_compat \
   --llm-base-url https://api.company.com/v1 \
   --llm-model gpt-4o
@@ -308,12 +310,12 @@ mnemofy meeting.mp3 \
 ### Verbose Output (Debugging)
 
 ```bash
-mnemofy meeting.mp3 --llm --verbose
+mnemofy meeting.mp3 --notes llm --verbose
 
 # Shows:
-# [llm] Request duration: 3.2s
-# [llm] Response size: 1847 tokens
-# [llm] Classification confidence: 0.83
+# [DEBUG] LLM engine initialized in 234ms: gpt-4o-mini
+# [DEBUG] Heuristic detection: type=planning, confidence=85.0%, duration=12ms
+# [DEBUG] LLM notes extraction: 15 items in 3200ms
 ```
 
 ---
