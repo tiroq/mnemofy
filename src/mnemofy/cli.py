@@ -176,6 +176,12 @@ def transcribe(
         "-v",
         help="Enable verbose logging (shows LLM request details, timing, detection info)",
     ),
+    model_suffix: bool = typer.Option(
+        False,
+        "--model-suffix",
+        help="Include model name in output filenames (e.g., meeting.base.transcript.json). "
+        "Useful for comparing outputs from different models without overwriting.",
+    ),
 ) -> None:
     """
     Transcribe audio/video file and generate structured meeting notes.
@@ -468,10 +474,16 @@ def transcribe(
             srt_output = TranscriptFormatter.to_srt(segments)
             json_output = TranscriptFormatter.to_json(segments, metadata)
             
-            # Write transcript files
-            txt_path = manager.get_transcript_paths()["txt"]
-            srt_path = manager.get_transcript_paths()["srt"]
-            json_path = manager.get_transcript_paths()["json"]
+            # Write transcript files (use model-aware paths if requested)
+            if model_suffix:
+                transcript_paths = manager.get_model_aware_transcript_paths(selected_model)
+                logger.debug(f"Using model-aware paths with suffix: {selected_model}")
+            else:
+                transcript_paths = manager.get_transcript_paths()
+            
+            txt_path = transcript_paths["txt"]
+            srt_path = transcript_paths["srt"]
+            json_path = transcript_paths["json"]
             
             txt_path.write_text(txt_output, encoding="utf-8")
             srt_path.write_text(srt_output, encoding="utf-8")
@@ -779,7 +791,31 @@ def transcribe(
         
         # Save processing metadata
         metadata_path = manager.get_metadata_path()
+        if model_suffix:
+            # Use model-suffixed metadata filename for comparison
+            metadata_path = manager.outdir / f"{manager.basename}.{selected_model}.metadata.json"
+            logger.debug(f"Using model-suffixed metadata path: {metadata_path}")
+        
         metadata_path.write_text(proc_metadata.to_json(), encoding="utf-8")
+        
+        # Track run history (append to history file)
+        history_path = manager.outdir / f"{manager.basename}.run-history.jsonl"
+        run_record = {
+            "timestamp": process_end_time.isoformat(),
+            "model": selected_model,
+            "duration_seconds": proc_metadata.duration_seconds,
+            "transcript_duration": metadata["duration"],
+            "word_count": word_count,
+            "segment_count": len(segments),
+            "config": proc_config.to_dict() if hasattr(proc_config, 'to_dict') else None,
+        }
+        
+        # Append to history file (JSONL format - one JSON object per line)
+        import json as json_module
+        with open(history_path, "a", encoding="utf-8") as f:
+            f.write(json_module.dumps(run_record, ensure_ascii=False) + "\n")
+        
+        logger.debug(f"Appended run record to history: {history_path}")
         
         # Create artifacts manifest
         manifest = create_artifact_manifest(
