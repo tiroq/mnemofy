@@ -260,13 +260,13 @@ This document breaks down the implementation into concrete tasks organized by us
 **Description**: Implement `get_model_table()` to display model comparison.
 
 **Acceptance Criteria**:
-- [ ] Implement `get_model_table(resources, recommended) -> str`
-- [ ] Use rich.table to format output
-- [ ] Columns: Model, Speed, Quality, RAM Req, VRAM Req, Status
-- [ ] Status: ✓ Recommended, ✓ Compatible, ⚠ Risky (near limit), ✗ Incompatible
-- [ ] Highlight recommended model
-- [ ] Return formatted string suitable for console.print()
-- [ ] Write test asserting table format is valid
+- [X] Implement `get_model_table(resources, recommended) -> str`
+- [X] Use rich.table to format output
+- [X] Columns: Model, Speed, Quality, RAM Req, VRAM Req, Status
+- [X] Status: ✓ Recommended, ✓ Compatible, ⚠ Risky (near limit), ✗ Incompatible
+- [X] Highlight recommended model
+- [X] Return formatted string suitable for console.print()
+- [X] Write test asserting table format is valid
 
 **Dependencies**: T-006, T-007
 
