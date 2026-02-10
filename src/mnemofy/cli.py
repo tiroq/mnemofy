@@ -8,8 +8,10 @@ from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from mnemofy.audio import AudioExtractor
-from mnemofy.classifier import HeuristicClassifier, MeetingType
+from mnemofy.classifier import HeuristicClassifier, MeetingType, extract_high_signal_segments
 from mnemofy.formatters import TranscriptFormatter
+from mnemofy.llm import get_llm_engine, get_llm_config
+from mnemofy.llm.base import LLMError
 from mnemofy.model_selector import (
     ModelSelectionError,
     get_model_table,
@@ -101,7 +103,7 @@ def transcribe(
     notes: str = typer.Option(
         "basic",
         "--notes",
-        help="Notes generation mode: 'basic' (deterministic) or 'llm' (LLM-enhanced, future feature)",
+        help="Notes generation mode: 'basic' (deterministic) or 'llm' (LLM-enhanced)",
     ),
     meeting_type: Optional[str] = typer.Option(
         "auto",
@@ -111,12 +113,27 @@ def transcribe(
     classify: str = typer.Option(
         "heuristic",
         "--classify",
-        help="Classification mode: heuristic (default), llm (future), or off (disable detection)",
+        help="Classification mode: heuristic (default), llm, or off (disable detection)",
     ),
     template: Optional[Path] = typer.Option(
         None,
         "--template",
         help="Custom template file path (overrides default meeting type templates)",
+    ),
+    llm_engine: str = typer.Option(
+        "openai",
+        "--llm-engine",
+        help="LLM engine: openai (default), ollama, or openai_compat",
+    ),
+    llm_model: Optional[str] = typer.Option(
+        None,
+        "--llm-model",
+        help="LLM model name (default: gpt-4o-mini for openai, llama3.2:3b for ollama)",
+    ),
+    llm_base_url: Optional[str] = typer.Option(
+        None,
+        "--llm-base-url",
+        help="Custom LLM API base URL (for openai_compat or custom endpoints)",
     ),
 ) -> None:
     """
@@ -281,6 +298,38 @@ def transcribe(
         # Step 4: Detect meeting type (if enabled)
         classification_result = None
         detected_type = None
+        llm_engine_instance = None
+        
+        # Initialize LLM engine if LLM mode requested
+        if classify == "llm" or notes == "llm":
+            try:
+                # Load configuration from file + env + CLI overrides
+                cli_overrides = {}
+                if llm_engine != "openai":  # Only override if not default
+                    cli_overrides["engine"] = llm_engine
+                if llm_model:
+                    cli_overrides["model"] = llm_model
+                if llm_base_url:
+                    cli_overrides["base_url"] = llm_base_url
+                
+                llm_config = get_llm_config(cli_overrides=cli_overrides)
+                
+                # Create LLM engine using merged config
+                llm_engine_instance = get_llm_engine(
+                    engine_type=llm_config.engine,
+                    model=llm_config.model,
+                    base_url=llm_config.base_url,
+                    api_key=llm_config.api_key,
+                    timeout=llm_config.timeout
+                )
+                
+                if llm_engine_instance:
+                    console.print(f"[dim]LLM engine: {llm_engine_instance.get_model_name()}[/dim]")
+                else:
+                    console.print("[yellow]Warning:[/yellow] LLM engine unavailable, falling back to heuristic mode")
+            except Exception as e:
+                console.print(f"[yellow]Warning:[/yellow] LLM initialization failed: {e}")
+                console.print("[dim]Falling back to heuristic mode[/dim]")
         
         if classify != "off" and meeting_type == "auto":
             with Progress(
@@ -290,13 +339,57 @@ def transcribe(
             ) as progress:
                 task = progress.add_task("Detecting meeting type...", total=None)
                 
-                if classify == "heuristic":
+                if classify == "llm" and llm_engine_instance:
+                    # Use LLM classifier
+                    try:
+                        transcript_text = " ".join(s["text"] for s in segments)
+                        
+                        # Extract high-signal segments (use config values if available)
+                        llm_config_for_extract = get_llm_config()
+                        high_signal = extract_high_signal_segments(
+                            transcript_text,
+                            context_words=llm_config_for_extract.context_words,
+                            max_segments=llm_config_for_extract.max_segments
+                        )
+                        
+                        classification_result = llm_engine_instance.classify_meeting_type(
+                            transcript_text,
+                            high_signal_segments=high_signal
+                        )
+                        detected_type = classification_result.detected_type
+                        
+                        # Display detection result
+                        confidence_pct = classification_result.confidence * 100
+                        console.print(f"\n[bold]Detected Meeting Type:[/bold] {detected_type.value}")
+                        console.print(f"[dim]Confidence: {confidence_pct:.1f}% (LLM)[/dim]")
+                        if classification_result.evidence:
+                            console.print(f"[dim]Evidence: {', '.join(classification_result.evidence[:3])}[/dim]")
+                        
+                        progress.update(task, description="[green]✓ Meeting type detected (LLM)")
+                    except LLMError as e:
+                        console.print(f"[yellow]Warning:[/yellow] LLM classification failed: {e}")
+                        console.print("[dim]Falling back to heuristic mode[/dim]")
+                        # Fallback to heuristic
+                        transcript_text = " ".join(s["text"] for s in segments)
+                        classifier = HeuristicClassifier()
+                        classification_result = classifier.detect_meeting_type(transcript_text, segments)
+                        detected_type = classification_result.detected_type
+                        progress.update(task, description="[green]✓ Meeting type detected (heuristic fallback)")
+                else:
                     # Use heuristic classifier
                     transcript_text = " ".join(s["text"] for s in segments)
                     classifier = HeuristicClassifier()
                     classification_result = classifier.detect_meeting_type(transcript_text, segments)
                     detected_type = classification_result.detected_type
                     
+                    # Display detection result
+                    confidence_pct = classification_result.confidence * 100
+                    console.print(f"\n[bold]Detected Meeting Type:[/bold] {detected_type.value}")
+                    console.print(f"[dim]Confidence: {confidence_pct:.1f}%[/dim]")
+                    if classification_result.evidence:
+                        console.print(f"[dim]Evidence: {', '.join(classification_result.evidence[:3])}[/dim]")
+                    
+                    progress.update(task, description="[green]✓ Meeting type detected
                     # Display detection result
                     confidence_pct = classification_result.confidence * 100
                     console.print(f"\n[bold]Detected Meeting Type:[/bold] {detected_type.value}")
@@ -332,9 +425,26 @@ def transcribe(
 
             # Use meeting-type-aware notes generation if type detected
             if detected_type and not template:
-                # Extract structured information
-                extractor = BasicNotesExtractor()
-                extracted_items = extractor.extract_all(segments, detected_type)
+                # Extract structured information (basic or LLM)
+                if notes == "llm" and llm_engine_instance:
+                    try:
+                        # Use LLM notes extraction
+                        extracted_items = llm_engine_instance.generate_notes(
+                            transcript_segments=segments,
+                            meeting_type=detected_type.value,
+                            focus_areas=None
+                        )
+                        console.print("[dim]Notes extracted using LLM[/dim]")
+                    except LLMError as e:
+                        console.print(f"[yellow]Warning:[/yellow] LLM notes extraction failed: {e}")
+                        console.print("[dim]Falling back to basic extraction[/dim]")
+                        # Fallback to basic extraction
+                        extractor = BasicNotesExtractor()
+                        extracted_items = extractor.extract_all(segments, detected_type)
+                else:
+                    # Use basic heuristic extraction
+                    extractor = BasicNotesExtractor()
+                    extracted_items = extractor.extract_all(segments, detected_type)
                 
                 # Prepare metadata for template
                 template_metadata = {
@@ -355,11 +465,11 @@ def transcribe(
             else:
                 # Fall back to legacy notes generator
                 try:
-                    notes_generator = StructuredNotesGenerator(mode=notes)
+                    notes_generator = StructuredNotesGenerator(mode="basic")  # Only basic mode supported in legacy
                     notes_markdown = notes_generator.generate(segments, metadata, include_audio=keep_audio)
                 except NotImplementedError as e:
                     console.print(f"[red]Error: {e}[/red]")
-                    console.print("[yellow]The 'llm' mode is not yet implemented. Please use 'basic' mode.[/yellow]")
+                    console.print("[yellow]Please specify a meeting type to use LLM notes generation.[/yellow]")
                     raise typer.Exit(1)
             
             # Determine output path for notes
