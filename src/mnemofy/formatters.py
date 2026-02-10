@@ -239,7 +239,8 @@ class TranscriptFormatter:
                      - duration: float (audio duration in seconds)
                      
                      Optional fields (preserved as-is):
-                     - schema_version, timestamp, mnemofy_version, etc.
+                     - schema_version, timestamp, mnemofy_version, model_size_gb,
+                     - quality_rating, speed_rating, processing_time_seconds, etc.
         
         Returns:
             str: JSON string (pretty-printed with 2-space indent).
@@ -292,11 +293,29 @@ class TranscriptFormatter:
         if "schema_version" not in metadata:
             metadata = {**metadata, "schema_version": "1.0"}
         
+        # Enrich metadata with additional computed fields
+        enriched_metadata = {**metadata}
+        
+        # Add generation timestamp if not present
+        if "generated_at" not in enriched_metadata:
+            from datetime import datetime
+            enriched_metadata["generated_at"] = datetime.now().isoformat()
+        
+        # Add segment statistics if not present
+        if "segment_count" not in enriched_metadata:
+            enriched_metadata["segment_count"] = len(segments)
+        
+        # Add word count if not present
+        if "word_count" not in enriched_metadata:
+            transcript_text = " ".join(seg.get("text", "") for seg in segments)
+            enriched_metadata["word_count"] = len(transcript_text.split())
+        
         # Build output structure
         output = {
-            "schema_version": metadata.get("schema_version", "1.0"),
-            "metadata": metadata,
+            "schema_version": enriched_metadata.get("schema_version", "1.0"),
+            "metadata": enriched_metadata,
             "segments": segments,
         }
         
         return json.dumps(output, indent=2, ensure_ascii=False)
+
