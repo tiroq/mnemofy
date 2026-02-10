@@ -258,30 +258,30 @@
 
 #### Deterministic Normalization
 
-- [ ] T102 [P] [US5] Implement stutter reduction in src/mnemofy/transcriber.py (detect repeated words like "I I I", reduce to single instance with bounds)
-- [ ] T103 [P] [US5] Implement filler word filtering in src/mnemofy/transcriber.py (optional removal of "um", "uh", "like" with conservative bounds)
-- [ ] T104 [P] [US5] Implement sentence stitching in src/mnemofy/transcriber.py (join segments across pauses ≤500ms)
-- [ ] T105 [US5] Implement safe number/date normalization in src/mnemofy/transcriber.py (standardize "march three" → "March 3" when unambiguous)
+- [X] T102 [P] [US5] Implement stutter reduction in src/mnemofy/transcriber.py (detect repeated words like "I I I", reduce to single instance with bounds)
+- [X] T103 [P] [US5] Implement filler word filtering in src/mnemofy/transcriber.py (optional removal of "um", "uh", "like" with conservative bounds)
+- [X] T104 [P] [US5] Implement sentence stitching in src/mnemofy/transcriber.py (join segments across pauses ≤500ms)
+- [X] T105 [US5] Implement safe number/date normalization in src/mnemofy/transcriber.py (standardize "march three" → "March 3" when unambiguous)
 
 #### LLM-Based Repair
 
-- [ ] T106 [US5] Create transcript repair prompt in src/mnemofy/transcriber.py (prompt: "Fix ASR errors, preserve meaning, log changes")
-- [ ] T107 [US5] Implement LLM repair in src/mnemofy/transcriber.py (call LLM with transcript, extract repaired text + changes log)
-- [ ] T108 [US5] Implement changes log format in src/mnemofy/transcriber.py (before/after text, timestamp, reason for each correction)
-- [ ] T109 [US5] Add timestamp preservation in src/mnemofy/transcriber.py (ensure original segment timestamps remain intact after repair)
+- [X] T106 [US5] Create transcript repair prompt in src/mnemofy/transcriber.py (prompt: "Fix ASR errors, preserve meaning, log changes")
+- [X] T107 [US5] Implement LLM repair in src/mnemofy/transcriber.py (call LLM with transcript, extract repaired text + changes log)
+- [X] T108 [US5] Implement changes log format in src/mnemofy/transcriber.py (before/after text, timestamp, reason for each correction)
+- [X] T109 [US5] Add timestamp preservation in src/mnemofy/transcriber.py (ensure original segment timestamps remain intact after repair)
 
 #### CLI Integration
 
-- [ ] T110 [P] [US5] Add --normalize flag to src/mnemofy/cli.py (enable deterministic normalization)
-- [ ] T111 [P] [US5] Add --repair flag to src/mnemofy/cli.py (enable LLM-based repair, requires --llm)
-- [ ] T112 [US5] Integrate normalization into pipeline in src/mnemofy/cli.py (run after transcription, before classification)
-- [ ] T113 [US5] Add changes log output in src/mnemofy/output_manager.py (save repair changes to separate file if repair enabled)
+- [X] T110 [P] [US5] Add --normalize flag to src/mnemofy/cli.py (enable deterministic normalization)
+- [X] T111 [P] [US5] Add --repair flag to src/mnemofy/cli.py (enable LLM-based repair, requires --llm)
+- [X] T112 [US5] Integrate normalization into pipeline in src/mnemofy/cli.py (run after transcription, before classification)
+- [X] T113 [US5] Add changes log output in src/mnemofy/output_manager.py (save repair changes to separate file if repair enabled)
 
 #### Testing for User Story 5
 
-- [ ] T114 [P] [US5] Add normalization tests in tests/test_transcriber.py (verify stutter reduction, sentence stitching, timestamp preservation)
-- [ ] T115 [P] [US5] Add LLM repair tests in tests/test_transcriber.py (mock LLM, verify changes log format)
-- [ ] T116 [US5] Add CLI integration tests in tests/test_cli_integration.py (test --normalize and --repair flags)
+- [X] T114 [P] [US5] Add normalization tests in tests/test_transcript_normalization.py (verify stutter reduction, sentence stitching, timestamp preservation)
+- [X] T115 [P] [US5] Add LLM repair tests in tests/test_transcript_normalization.py (mock LLM, verify changes log format)
+- [X] T116 [US5] Add CLI integration tests in tests/test_transcript_normalization.py (test --normalize and --repair flags)
 
 **Checkpoint**: User Story 5 complete - transcript quality improvements available
 
