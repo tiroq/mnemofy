@@ -108,14 +108,73 @@ mnemofy transcribe --list-models
 ### Advanced Options
 
 ```bash
-# Specify output file
+# Specify output directory for all files
+mnemofy transcribe meeting.mp4 --outdir outputs/
+
+# Specify output file for notes only
 mnemofy transcribe meeting.mp4 -o notes/meeting_summary.md
 
 # Set a custom title for the notes
 mnemofy transcribe meeting.mp4 -t "Team Sprint Planning"
 
+# Specify transcription language (ISO 639-1 code)
+mnemofy transcribe meeting.mp4 --lang es  # Spanish
+mnemofy transcribe meeting.mp4 --lang fr  # French
+
+# Choose notes generation mode
+mnemofy transcribe meeting.mp4 --notes basic  # Deterministic extraction (default)
+# mnemofy transcribe meeting.mp4 --notes llm  # AI-enhanced (coming in v0.9.0)
+
 # Keep the extracted audio file
 mnemofy transcribe video.mkv --keep-audio
+```
+
+## Output Files
+
+mnemofy generates **4 output files** from each transcription:
+
+```
+meeting.mp4  (input)
+├── meeting.transcript.txt   # Timestamped plain text
+├── meeting.transcript.srt   # SubRip subtitle format  
+├── meeting.transcript.json  # Structured JSON with metadata
+└── meeting.notes.md         # Structured meeting notes
+```
+
+### File Descriptions
+
+1. **`.transcript.txt`** - Timestamped text transcript
+   - Format: `[HH:MM:SS–HH:MM:SS] text`
+   - Best for: Reading, searching, printing
+   
+2. **`.transcript.srt`** - SubRip subtitle file
+   - Format: Standard SRT (sequence number, timing, text)
+   - Best for: Video subtitles in VLC, subtitle editors
+   
+3. **`.transcript.json`** - Structured JSON
+   - Contains: Metadata (engine, model, language) + segments
+   - Best for: Programmatic access, data analysis
+   
+4. **`.notes.md`** - Structured meeting notes
+   - Sections: Metadata, Topics, Decisions, Actions, Mentions, Risks, File Links
+   - Best for: Quick review, sharing with team
+
+### Output Location
+
+By default, files are created in the **same directory as the input file**:
+
+```bash
+mnemofy transcribe ~/Videos/meeting.mp4
+# Creates: ~/Videos/meeting.transcript.{txt,srt,json}
+#          ~/Videos/meeting.notes.md
+```
+
+Use `--outdir` to specify a different location:
+
+```bash
+mnemofy transcribe meeting.mp4 --outdir ./transcripts/
+# Creates: ./transcripts/meeting.transcript.{txt,srt,json}
+#          ./transcripts/meeting.notes.md
 ```
 
 ### Get Help
@@ -130,34 +189,63 @@ mnemofy version
 
 ## Example Output
 
-Given an audio file with meeting content, mnemofy generates structured Markdown like:
+Given an audio file with meeting content, mnemofy generates structured Markdown (`.notes.md`) like:
 
 ```markdown
-# Meeting Notes
+# Meeting Notes: meeting
 
-## Topics Discussed
+**Date**: 2026-02-10
+**Source**: meeting.mp4 (45m 30s)
+**Language**: en
+**Engine**: faster-whisper (base)
+**Generated**: 2026-02-10T15:30:00Z
 
-- **[00:32]** Let's talk about the new feature requirements
-- **[05:12]** Now let's discuss the timeline
+## Topics
 
-## Decisions Made
+- **[05:00–10:00]** Discussion about project roadmap and milestones
+- **[15:30–20:15]** Review of last sprint deliverables
+- **[30:00–35:45]** Planning for upcoming feature releases
 
-- **[03:45]** We've decided to use Python for the backend
-- **[08:20]** The consensus is to launch in Q2
+## Decisions
+
+- **[08:30]** We decided to use Python for the backend
+- **[18:45]** Agreed to launch the MVP in Q2
+- **[32:10]** Approved budget increase for infrastructure
 
 ## Action Items
 
-- **[10:15]** John needs to create the API documentation (@john)
-- **[12:30]** Sarah will follow up with the design team (@sarah)
+- **[10:15]** John needs to create the API documentation
+- **[22:30]** Sarah will follow up with the design team
+- **[40:00]** Team should review security audit by Friday
 
-## Mentions
+## Concrete Mentions
 
-- @john: 10:15
-- @sarah: 12:30
+### Names
+- John (10:15, 12:30)
+- Sarah (22:30, 25:00)
 
-## Full Transcript
+### Numbers  
+- Q2 (18:45)
+- $50,000 (32:10)
 
-**[00:00]** Welcome everyone to today's meeting...
+### URLs
+- https://github.com/project/repo (15:00)
+
+## Risks & Open Questions
+
+### Open Questions
+- How should we handle database migrations? **[25:30]**
+- What's the timeline for QA testing? **[38:00]**
+
+### Risks
+- Potential delay due to third-party API integration **[28:15]**
+
+## Transcript Files
+
+- Full Transcript (TXT): meeting.transcript.txt
+- Subtitle Format (SRT): meeting.transcript.srt 
+- Structured Data (JSON): meeting.transcript.json
+- Audio (WAV): meeting.mnemofy.wav
 ```
 
 ## Architecture
@@ -278,6 +366,57 @@ KMP_DUPLICATE_LIB_OK=TRUE mnemofy transcribe your_file.mp4
 ```
 
 This is a known issue with multiple OpenMP runtimes being linked (common with ctranslate2/faster-whisper).
+
+### Audio Extraction Issues
+
+#### ffmpeg Not Found
+
+If you see `ffmpeg: command not found`:
+
+**Solution**: Install ffmpeg:
+```bash
+# macOS
+brew install ffmpeg
+
+# Ubuntu/Debian
+sudo apt install ffmpeg
+
+# Windows (using Chocolatey)
+choco install ffmpeg
+```
+
+Verify installation:
+```bash
+ffmpeg -version
+```
+
+#### Unsupported Video Codec
+
+If audio extraction fails with codec errors:
+
+1. Check if the video file is corrupted:
+   ```bash
+   ffplay your_video.mp4  # Should play without errors
+   ```
+
+2. Try converting to a standard format first:
+   ```bash
+   ffmpeg -i input.mkv -c:v libx264 -c:a aac output.mp4
+   mnemofy transcribe output.mp4
+   ```
+
+3. Check container format is supported (mp4, mkv, mov, avi, webm)
+
+#### Extracted Audio Quality Issues
+
+If transcription accuracy is poor, the audio extraction might have issues:
+
+- Verify audio channel: mnemofy extracts the first audio track
+- For multi-audio files, extract specific track manually:
+  ```bash
+  ffmpeg -i video.mkv -map 0:a:1 audio.wav  # Extract 2nd audio track
+  mnemofy transcribe audio.wav
+  ```
 
 ## License
 

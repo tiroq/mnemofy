@@ -8,13 +8,15 @@ from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from mnemofy.audio import AudioExtractor
+from mnemofy.formatters import TranscriptFormatter
 from mnemofy.model_selector import (
     ModelSelectionError,
     get_model_table,
     list_models,
     recommend_model,
 )
-from mnemofy.notes import NoteGenerator
+from mnemofy.notes import StructuredNotesGenerator
+from mnemofy.output_manager import OutputManager
 from mnemofy.resources import detect_system_resources
 from mnemofy.transcriber import Transcriber
 from mnemofy.tui.model_menu import ModelMenu, is_interactive_environment
@@ -42,6 +44,13 @@ def transcribe(
         "--output",
         "-o",
         help="Output Markdown file path (default: input_name_notes.md)",
+    ),
+    outdir: Optional[Path] = typer.Option(
+        None,
+        "--outdir",
+        help="Output directory for transcript and notes files (default: same as input)",
+        file_okay=False,
+        dir_okay=True,
     ),
     model: Optional[str] = typer.Option(
         None,
@@ -79,6 +88,16 @@ def transcribe(
         "-k",
         help="Keep extracted audio file",
     ),
+    lang: Optional[str] = typer.Option(
+        None,
+        "--lang",
+        help="Language of audio (e.g., en, es, fr). Auto-detect if not specified",
+    ),
+    notes: str = typer.Option(
+        "basic",
+        "--notes",
+        help="Notes generation mode: 'basic' (deterministic) or 'llm' (LLM-enhanced, future feature)",
+    ),
 ) -> None:
     """
     Transcribe audio/video file and generate structured meeting notes.
@@ -104,14 +123,13 @@ def transcribe(
             resources = detect_system_resources(no_gpu=no_gpu)
             table = get_model_table(resources, use_gpu=not no_gpu)
             console.print(table)
-            raise typer.Exit(0)
         except Exception as e:
             console.print(f"[yellow]Warning:[/yellow] Could not detect system resources: {e}")
             # Fallback: show models without resource info
             console.print("\n[bold]Available Whisper Models:[/bold]")
             for model_name in list_models():
                 console.print(f"  • {model_name}")
-            raise typer.Exit(0)
+        raise typer.Exit(0)
     
     # Validate input_file is provided when not using --list-models
     if input_file is None:
@@ -176,9 +194,12 @@ def transcribe(
             selected_model = "base"
     
     try:
-        # Determine output path
-        if output is None:
-            output = input_file.parent / f"{input_file.stem}_notes.md"
+        # Initialize OutputManager for path management
+        try:
+            manager = OutputManager(input_file, outdir=outdir)
+        except Exception as e:
+            console.print(f"[red]Error:[/red] Failed to initialize output directory: {e}")
+            raise typer.Exit(1)
 
         console.print(f"\n[bold blue]mnemofy[/bold blue] - Processing {input_file.name}")
         with Progress(
@@ -188,29 +209,56 @@ def transcribe(
         ) as progress:
             task = progress.add_task("Extracting audio...", total=None)
 
+            # Use OutputManager to determine audio output path
+            audio_output_path = manager.get_audio_path()
             extractor = AudioExtractor()
-            audio_file = extractor.extract_audio(input_file)
+            audio_file = extractor.extract_audio(input_file, output_file=audio_output_path)
 
             progress.update(task, description="[green]✓ Audio extracted")
 
         console.print(f"[dim]Audio file: {audio_file}[/dim]")
 
-        # Step 2: Transcribe
+        # Step 3: Generate formatted transcripts
         with Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
             console=console,
         ) as progress:
-            task = progress.add_task(
-                f"Transcribing with Whisper ({selected_model})...", total=None
-            )
+            task = progress.add_task("Generating formatted transcripts...", total=None)
 
             transcriber = Transcriber(model_name=selected_model)
-            transcription = transcriber.transcribe(audio_file)
+            transcription = transcriber.transcribe(audio_file, language=lang)
+            segments = transcriber.get_segments(transcription)
+            
+            # Determine effective language: prefer explicit --lang, then detected, then fallback
+            detected_language = transcription.get("language") if transcription else None
+            effective_language = lang or detected_language or "en"
+            
+            # Prepare metadata
+            metadata = {
+                "engine": "faster-whisper",
+                "model": selected_model,
+                "language": effective_language,
+                "duration": sum(s["end"] - s["start"] for s in segments),
+            }
+            
+            # Generate all formats
+            txt_output = TranscriptFormatter.to_txt(segments)
+            srt_output = TranscriptFormatter.to_srt(segments)
+            json_output = TranscriptFormatter.to_json(segments, metadata)
+            
+            # Write transcript files
+            txt_path = manager.get_transcript_paths()["txt"]
+            srt_path = manager.get_transcript_paths()["srt"]
+            json_path = manager.get_transcript_paths()["json"]
+            
+            txt_path.write_text(txt_output, encoding="utf-8")
+            srt_path.write_text(srt_output, encoding="utf-8")
+            json_path.write_text(json_output, encoding="utf-8")
 
-            progress.update(task, description="[green]✓ Transcription complete")
+            progress.update(task, description="[green]✓ Transcripts generated")
 
-        # Step 3: Generate notes
+        # Step 4: Generate notes
         with Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
@@ -218,13 +266,21 @@ def transcribe(
         ) as progress:
             task = progress.add_task("Generating notes...", total=None)
 
-            generator = NoteGenerator()
-            segments = transcriber.get_segments(transcription)
-            annotated = generator.annotate_segments(segments)
-            markdown = generator.generate_markdown(annotated, title=title)
-
+            # Use enhanced notes generator instead of legacy implementation
+            try:
+                notes_generator = StructuredNotesGenerator(mode=notes)
+                notes_markdown = notes_generator.generate(segments, metadata, include_audio=keep_audio)
+            except NotImplementedError as e:
+                console.print(f"[red]Error: {e}[/red]")
+                console.print("[yellow]The 'llm' mode is not yet implemented. Please use 'basic' mode.[/yellow]")
+                raise typer.Exit(1)
+            
+            # Determine output path for notes
+            if output is None:
+                output = manager.get_notes_path()
+            
             # Write output
-            output.write_text(markdown, encoding="utf-8")
+            output.write_text(notes_markdown, encoding="utf-8")
 
             progress.update(task, description="[green]✓ Notes generated")
 
@@ -236,26 +292,19 @@ def transcribe(
                 pass  # Ignore cleanup errors
 
         console.print("\n[bold green]✓ Success![/bold green]")
-        console.print(f"[dim]Notes saved to:[/dim] {output}")
+        console.print(f"[dim]Output files generated:[/dim]")
+        console.print(f"  Transcript (TXT): {txt_path}")
+        console.print(f"  Subtitle (SRT): {srt_path}")
+        console.print(f"  Structured (JSON): {json_path}")
+        console.print(f"  Notes: {output}")
 
         # Show stats
         console.print("\n[bold]Statistics:[/bold]")
         console.print(f"  Segments: {len(segments)}")
-        topics = sum(1 for s in annotated if s.is_topic)
-        decisions = sum(1 for s in annotated if s.is_decision)
-        actions = sum(1 for s in annotated if s.is_action)
-        all_mentions: set[str] = set()
-        for s in annotated:
-            all_mentions.update(s.mentions)
-
-        if topics > 0:
-            console.print(f"  Topics: {topics}")
-        if decisions > 0:
-            console.print(f"  Decisions: {decisions}")
-        if actions > 0:
-            console.print(f"  Action items: {actions}")
-        if all_mentions:
-            console.print(f"  Mentions: {len(all_mentions)}")
+        total_duration = sum(s.end - s.start for s in segments)
+        minutes = int(total_duration // 60)
+        seconds = int(total_duration % 60)
+        console.print(f"  Duration: {minutes}m {seconds}s")
 
     except KeyboardInterrupt:
         console.print("\n[yellow]Interrupted by user[/yellow]")
