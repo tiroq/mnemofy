@@ -1,0 +1,71 @@
+[00:00-00:10] Thanks everyone for joining this design review. Today we're going to discuss the architecture for our new caching layer.
+
+[00:10-00:25] The goal is to reduce database load and improve API response times. We've been seeing slow response times during peak hours, especially for read-heavy endpoints.
+
+[00:25-00:40] I've put together a design proposal. Let me walk through it. We'll introduce Redis as our caching layer, sitting between the API and database.
+
+[00:40-00:55] For cache invalidation, I'm proposing a time-to-live approach with selective cache clearing on write operations. TTL would be 5 minutes for frequently changing data and 1 hour for relatively static data.
+
+[00:55-01:10] Question on the TTL strategy - have you considered event-driven invalidation instead? With TTL, we could serve stale data for up to 5 minutes.
+
+[01:10-01:30] Good point. Event-driven would be more accurate, but adds complexity. We'd need to set up pub/sub or use database triggers. What's the tolerance for stale data in our use case?
+
+[01:30-01:45] For user profile data, 5 minutes is probably fine. But for things like inventory counts or pricing, we need real-time accuracy.
+
+[01:45-02:00] That makes sense. Let's use a hybrid approach - TTL for user profiles and session data, event-driven invalidation for inventory and pricing.
+
+[02:00-02:10] I like that. Can you walk us through the event-driven mechanism?
+
+[02:10-02:30] Sure. We'll use Redis pub/sub. When a write operation happens - like updating inventory - we publish an invalidation event to a channel. Our API servers subscribe to that channel and clear the relevant cache entries.
+
+[02:30-02:45] What about cache stampede? If a popular item's cache expires and we get thousands of requests simultaneously, won't they all hit the database?
+
+[02:45-03:05] Excellent catch. We'll implement a lock mechanism. The first request to miss cache acquires a lock and fetches from the database. Subsequent requests wait for the lock holder to populate the cache, then read from cache.
+
+[03:05-03:20] How long should the lock be held? And what if the lock holder fails or times out?
+
+[03:20-03:40] Lock timeout of 10 seconds should be sufficient for most database queries. If the lock holder fails, the lock auto-expires and the next requester can acquire it. We'll also implement a circuit breaker to prevent cascading failures.
+
+[03:40-03:55] What about cache warming? Should we pre-populate the cache on deployment or let it warm up naturally?
+
+[03:55-04:15] For critical paths like the homepage and popular product pages, we should pre-warm on deployment. For everything else, lazy loading is fine. We can have a background job that warms the cache before deployments.
+
+[04:15-04:30] Makes sense. What's our disaster recovery plan? If Redis goes down, do we fall back directly to the database?
+
+[04:30-04:50] Yes, we'll have automatic fallback. If Redis is unavailable, requests go straight to the database. We'll set up health checks and alerts so we know immediately if Redis fails.
+
+[04:50-05:10] We should also consider Redis clustering for high availability. A single Redis instance is a single point of failure.
+
+[05:10-05:30] Agreed. I'm proposing a Redis cluster with 3 nodes - one primary and two replicas. Automatic failover if the primary goes down. This adds complexity but gives us the reliability we need.
+
+[05:30-05:45] How will this affect our-deployment process? Do we need to deploy Redis configuration changes separately from application code?
+
+[05:45-06:05] Good question. We'll version the Redis configuration in infrastructure-as-code. Redis changes can be deployed independently, but we should coordinate with application deployments when there are breaking changes.
+
+[06:05-06:20] What about monitoring and observability? How do we know if caching is working effectively?
+
+[06:20-06:40] We'll track several metrics: cache hit rate, cache miss rate, average response time with/without cache, Redis memory usage, and eviction rate. I'll set up dashboards in Grafana and alerts for anomalies.
+
+[06:40-06:55] Can we get estimated impact on response times? What's the expected improvement?
+
+[06:55-07:15] Based on benchmarks from similar systems, we should see 60-80% reduction in response time for cacheable endpoints. Database load should decrease by about 70% for read operations.
+
+[07:15-07:30] That's significant. What's the timeline for implementation?
+
+[07:30-07:50] Phase 1: Redis setup and basic caching for read-only endpoints - 2 weeks. Phase 2: Event-driven invalidation for write paths - 2 weeks. Phase 3: Cache warming and optimization - 1 week. Total about 5 weeks.
+
+[07:50-08:05] Risks or concerns we should be aware of?
+
+[08:05-08:25] Main risks are: cache inconsistency if invalidation logic has bugs, Redis memory exhaustion if we don't tune eviction policies correctly, and potential network latency between app servers and Redis.
+
+[08:25-08:40] How do we mitigate those?
+
+[08:40-09:00] For cache consistency, comprehensive testing and feature flags for gradual rollout. For memory, we'll set maximum memory limits and use LRU eviction. For network latency, Redis will be in the same availability zone as the app servers.
+
+[09:00-09:15] This looks solid. I think we should move forward with this design. Any final questions or concerns?
+
+[09:15-09:25] No, I'm comfortable with the approach.
+
+[09:25-09:32] Same here. Let's proceed.
+
+[09:32-09:45] Great. I'll finalize the design doc with today's feedback and start implementation next sprint. Thanks everyone.
