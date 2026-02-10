@@ -15,6 +15,7 @@ from mnemofy.model_selector import (
     recommend_model,
 )
 from mnemofy.notes import NoteGenerator
+from mnemofy.output_manager import OutputManager
 from mnemofy.resources import detect_system_resources
 from mnemofy.transcriber import Transcriber
 from mnemofy.tui.model_menu import ModelMenu, is_interactive_environment
@@ -42,6 +43,13 @@ def transcribe(
         "--output",
         "-o",
         help="Output Markdown file path (default: input_name_notes.md)",
+    ),
+    outdir: Optional[Path] = typer.Option(
+        None,
+        "--outdir",
+        help="Output directory for transcript and notes files (default: same as input)",
+        file_okay=False,
+        dir_okay=True,
     ),
     model: Optional[str] = typer.Option(
         None,
@@ -176,9 +184,17 @@ def transcribe(
             selected_model = "base"
     
     try:
-        # Determine output path
+        # Initialize OutputManager for path management
+        try:
+            manager = OutputManager(input_file, outdir=outdir)
+        except Exception as e:
+            console.print(f"[red]Error:[/red] Failed to initialize output directory: {e}")
+            raise typer.Exit(1)
+        
+        # Determine output path (notes file)
+        # If output is not explicitly provided, use OutputManager's notes path
         if output is None:
-            output = input_file.parent / f"{input_file.stem}_notes.md"
+            output = manager.get_notes_path()
 
         console.print(f"\n[bold blue]mnemofy[/bold blue] - Processing {input_file.name}")
         with Progress(
@@ -188,8 +204,10 @@ def transcribe(
         ) as progress:
             task = progress.add_task("Extracting audio...", total=None)
 
+            # Use OutputManager to determine audio output path
+            audio_output_path = manager.get_audio_path()
             extractor = AudioExtractor()
-            audio_file = extractor.extract_audio(input_file)
+            audio_file = extractor.extract_audio(input_file, output_file=audio_output_path)
 
             progress.update(task, description="[green]✓ Audio extracted")
 
