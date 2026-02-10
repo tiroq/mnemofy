@@ -5,6 +5,54 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+**Model-Aware Artifacts & Enriched Metadata**
+
+- **Processing metadata** (`*.metadata.json`):
+  - Complete audit trail of processing pipeline
+  - ASR model details: name, size, quality/speed ratings
+  - LLM model details: name, purpose (classification, notes, repair)
+  - Processing configuration: language, flags, meeting type, modes
+  - Timing information: start, end, total duration
+  - Statistics: word count, segment count, transcript duration
+  - Best for: Audit trails, cost tracking, reproducibility
+- **Artifacts manifest** (`*.artifacts.json`):
+  - Index of all generated files
+  - Model used for each artifact
+  - File sizes and descriptions
+  - Schema versioning for structured formats
+  - Best for: Automation, workflows, batch processing
+- **Enriched transcript JSON**:
+  - Model specifications (size, quality/speed ratings)
+  - Auto-generated timestamp and statistics
+  - Preprocessing flags (normalization, repair)
+  - Backward compatible with existing schema
+- **Model-aware file paths** (API):
+  - `OutputManager.get_model_aware_transcript_paths(model_name)`: Generate filenames with model names
+  - Pattern: `{basename}.{model}.transcript.{ext}`
+  - Enables side-by-side model comparison
+- **New artifacts module**:
+  - Dataclasses for metadata structures
+  - JSON serialization support
+  - Factory functions for easy creation
+  - Extensible design for future enhancements
+
+### Changed
+
+- **CLI output**: Now displays metadata file paths after processing
+- **Transcript JSON**: Auto-enriched with additional metadata fields
+- **OutputManager**: Added methods for metadata paths and model-aware naming
+
+### Documentation
+
+- Added `docs/MODEL_AWARE_ARTIFACTS.md`: Comprehensive guide to metadata features
+- Added `ARTIFACTS_IMPLEMENTATION.md`: Implementation details and API examples
+- Added `examples/analyze_metadata.py`: Example script for metadata analysis
+- Updated README with metadata features overview
+
 ## [1.0.0] - 2026-02-10
 
 ### Added
