@@ -576,7 +576,7 @@ def transcribe(
                                f"confidence={confidence_pct:.1f}%, duration={detect_duration*1000:.0f}ms")
                     
                     progress.update(task, description="[green]✓ Meeting type detected")
-        elif meeting_type != "auto":
+        elif meeting_type and meeting_type != "auto":
             # Use explicit meeting type
             try:
                 detected_type = MeetingType(meeting_type.lower())
@@ -703,7 +703,7 @@ def transcribe(
             # Write meeting-type.json if type was detected
             if classification_result:
                 import json
-                meeting_type_path = manager.outdir / f"{manager.base_name}.meeting-type.json"
+                meeting_type_path = manager.outdir / f"{manager.basename}.meeting-type.json"
                 meeting_type_data = {
                     "detected_type": classification_result.detected_type.value,
                     "confidence": classification_result.confidence,
@@ -832,11 +832,14 @@ def transcribe(
         # Changes log (if generated)
         if transcript_changes:
             changes_log_path = manager.get_changes_log_path()
+            changes_model = (
+                llm_engine_instance.get_model_name() if (repair and llm_engine_instance) else "normalizer"
+            )
             manifest.add_artifact(
                 "log", str(changes_log_path.relative_to(manager.outdir)),
                 "md", "Transcript normalization/repair changes log",
                 get_file_size(changes_log_path),
-                llm_engine_instance.get_model_name() if repair else "normalizer"
+                changes_model
             )
         
         # Metadata artifact
@@ -882,7 +885,7 @@ def transcribe(
         # Show stats
         console.print("\n[bold]Statistics:[/bold]")
         console.print(f"  Segments: {len(segments)}")
-        total_duration = sum(s.end - s.start for s in segments)
+        total_duration = sum(s["end"] - s["start"] for s in segments)
         minutes = int(total_duration // 60)
         seconds = int(total_duration % 60)
         console.print(f"  Duration: {minutes}m {seconds}s")
