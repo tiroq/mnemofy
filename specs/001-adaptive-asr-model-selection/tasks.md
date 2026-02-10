@@ -19,11 +19,11 @@ This document breaks down the implementation into concrete tasks organized by us
 **Description**: Evaluate `psutil` and platform-specific APIs for resource detection.
 
 **Acceptance Criteria**:
-- [ ] Document psutil capabilities for CPU, RAM, GPU detection
-- [ ] Test psutil accuracy on macOS, Linux, Windows (if available)
-- [ ] Document GPU detection approach (CUDA, Metal, ROCm)
-- [ ] Identify limitations and fallback strategies
-- [ ] Create research.md with findings
+- [X] Document psutil capabilities for CPU, RAM, GPU detection
+- [X] Test psutil accuracy on macOS, Linux, Windows (if available)
+- [X] Document GPU detection approach (CUDA, Metal, ROCm)
+- [X] Identify limitations and fallback strategies
+- [X] Create research.md with findings
 
 **Dependencies**: None
 
@@ -38,11 +38,11 @@ This document breaks down the implementation into concrete tasks organized by us
 **Description**: Evaluate rich library's capabilities for interactive menus.
 
 **Acceptance Criteria**:
-- [ ] Prototype arrow key navigation with rich
-- [ ] Test keyboard input handling
-- [ ] Document rendering approach for model list
-- [ ] Verify TTY detection methods
-- [ ] Add examples to research.md
+- [X] Prototype arrow key navigation with rich
+- [X] Test keyboard input handling
+- [X] Document rendering approach for model list
+- [X] Verify TTY detection methods
+- [X] Add examples to research.md
 
 **Dependencies**: None
 
@@ -59,11 +59,11 @@ This document breaks down the implementation into concrete tasks organized by us
 **Description**: Create `SystemResources` dataclass to represent hardware capabilities.
 
 **Acceptance Criteria**:
-- [ ] Define SystemResources dataclass in `src/mnemofy/resources.py`
-- [ ] Include fields: cpu_cores, cpu_arch, total_ram_gb, available_ram_gb, has_gpu, gpu_type, available_vram_gb
-- [ ] Add type hints (Python 3.9+ compatible)
-- [ ] Add docstrings
-- [ ] Add `__str__` method for debugging
+- [X] Define SystemResources dataclass in `src/mnemofy/resources.py`
+- [X] Include fields: cpu_cores, cpu_arch, total_ram_gb, available_ram_gb, has_gpu, gpu_type, available_vram_gb
+- [X] Add type hints (Python 3.9+ compatible)
+- [X] Add docstrings
+- [X] Add `__str__` method for debugging
 
 **Dependencies**: R-001
 
@@ -81,11 +81,11 @@ This document breaks down the implementation into concrete tasks organized by us
 **Description**: Implement `get_cpu_info()` to detect CPU cores and architecture.
 
 **Acceptance Criteria**:
-- [ ] Implement `get_cpu_info() -> tuple[int, str]`
-- [ ] Use psutil for core count
-- [ ] Use platform module for architecture
-- [ ] Handle detection failure gracefully (log warning, return conservative defaults)
-- [ ] Write unit tests with mocked psutil
+- [X] Implement `get_cpu_info() -> tuple[int, str]`
+- [X] Use psutil for core count
+- [X] Use platform module for architecture
+- [X] Handle detection failure gracefully (log warning, return conservative defaults)
+- [X] Write unit tests with mocked psutil
 
 **Dependencies**: T-001
 
@@ -104,12 +104,12 @@ This document breaks down the implementation into concrete tasks organized by us
 **Description**: Implement `get_memory_info()` to detect total and available RAM.
 
 **Acceptance Criteria**:
-- [ ] Implement `get_memory_info() -> tuple[float, float]`
-- [ ] Use psutil.virtual_memory()
-- [ ] Convert to GB with 2 decimal precision
-- [ ] Handle detection failure gracefully
-- [ ] Write unit tests with mocked psutil
-- [ ] Test edge case: available > total (should never happen, but handle)
+- [X] Implement `get_memory_info() -> tuple[float, float]`
+- [X] Use psutil.virtual_memory()
+- [X] Convert to GB with 2 decimal precision
+- [X] Handle detection failure gracefully
+- [X] Write unit tests with mocked psutil
+- [X] Test edge case: available > total (should never happen, but handle)
 
 **Dependencies**: T-001
 
@@ -128,14 +128,14 @@ This document breaks down the implementation into concrete tasks organized by us
 **Description**: Implement `get_gpu_info()` to detect GPU availability, type, and VRAM.
 
 **Acceptance Criteria**:
-- [ ] Implement `get_gpu_info() -> tuple[bool, Optional[str], Optional[float]]`
-- [ ] Detect CUDA (nvidia-smi or pynvml)
-- [ ] Detect Metal (macOS platform check)
-- [ ] Detect ROCm (AMD, linux platform check)
-- [ ] Return VRAM if available (CUDA only initially)
-- [ ] Graceful fallback to (False, None, None) if detection fails
-- [ ] Write unit tests for all platforms
-- [ ] Document known limitations
+- [X] Implement `get_gpu_info() -> tuple[bool, Optional[str], Optional[float]]`
+- [X] Detect CUDA (nvidia-smi or pynvml)
+- [X] Detect Metal (macOS platform check)
+- [X] Detect ROCm (AMD, linux platform check)
+- [X] Return VRAM if available (CUDA only initially)
+- [X] Graceful fallback to (False, None, None) if detection fails
+- [X] Write unit tests for all platforms
+- [X] Document known limitations
 
 **Dependencies**: T-001
 
@@ -156,12 +156,12 @@ This document breaks down the implementation into concrete tasks organized by us
 **Description**: Implement `detect_system_resources()` orchestration function.
 
 **Acceptance Criteria**:
-- [ ] Implement `detect_system_resources() -> SystemResources`
-- [ ] Call get_cpu_info(), get_memory_info(), get_gpu_info()
-- [ ] Construct SystemResources instance
-- [ ] Log detected resources at INFO level
-- [ ] Handle partial detection failures (continue with defaults)
-- [ ] Write integration test
+- [X] Implement `detect_system_resources() -> SystemResources`
+- [X] Call get_cpu_info(), get_memory_info(), get_gpu_info()
+- [X] Construct SystemResources instance
+- [X] Log detected resources at INFO level
+- [X] Handle partial detection failures (continue with defaults)
+- [X] Write integration test
 
 **Dependencies**: T-002, T-003, T-004
 
@@ -182,12 +182,12 @@ This document breaks down the implementation into concrete tasks organized by us
 **Description**: Create ModelSpec dataclass and hardcoded model database.
 
 **Acceptance Criteria**:
-- [ ] Define ModelSpec dataclass in `src/mnemofy/model_selector.py`
-- [ ] Include fields: name, min_ram_gb, min_vram_gb, speed_rating, quality_rating, description
-- [ ] Create MODEL_SPECS dict with 5 models (tiny, base, small, medium, large-v3)
-- [ ] Populate accurate RAM/VRAM requirements (research from faster-whisper docs)
-- [ ] Add docstrings explaining rating scales (1-5)
-- [ ] Write tests asserting MODEL_SPECS structure is valid
+- [X] Define ModelSpec dataclass in `src/mnemofy/model_selector.py`
+- [X] Include fields: name, min_ram_gb, min_vram_gb, speed_rating, quality_rating, description
+- [X] Create MODEL_SPECS dict with 5 models (tiny, base, small, medium, large-v3)
+- [X] Populate accurate RAM/VRAM requirements (research from faster-whisper docs)
+- [X] Add docstrings explaining rating scales (1-5)
+- [X] Write tests asserting MODEL_SPECS structure is valid
 
 **Dependencies**: R-001
 
@@ -208,12 +208,12 @@ This document breaks down the implementation into concrete tasks organized by us
 **Description**: Implement `filter_compatible_models()` to find models that fit in available resources.
 
 **Acceptance Criteria**:
-- [ ] Implement `filter_compatible_models(resources, use_gpu) -> list[ModelSpec]`
-- [ ] Filter by min_ram_gb <= resources.available_ram_gb
-- [ ] If use_gpu=True and has_gpu, filter by min_vram_gb <= available_vram_gb
-- [ ] Return sorted list (quality desc, speed desc)
-- [ ] Handle edge case: no compatible models (return empty list)
-- [ ] Write tests for various resource scenarios (low RAM, high RAM, GPU, no GPU)
+- [X] Implement `filter_compatible_models(resources, use_gpu) -> list[ModelSpec]`
+- [X] Filter by min_ram_gb <= resources.available_ram_gb
+- [X] If use_gpu=True and has_gpu, filter by min_vram_gb <= available_vram_gb
+- [X] Return sorted list (quality desc, speed desc)
+- [X] Handle edge case: no compatible models (return empty list)
+- [X] Write tests for various resource scenarios (low RAM, high RAM, GPU, no GPU)
 
 **Dependencies**: T-005, T-006
 
@@ -232,16 +232,16 @@ This document breaks down the implementation into concrete tasks organized by us
 **Description**: Implement `recommend_model()` to select best model with reasoning.
 
 **Acceptance Criteria**:
-- [ ] Implement `recommend_model(resources, use_gpu) -> tuple[ModelSpec, str]`
-- [ ] Call filter_compatible_models()
-- [ ] Select highest quality compatible model
-- [ ] Generate reasoning string (e.g., "8GB RAM available, GPU detected → medium model")
-- [ ] Raise error if no compatible models (SystemResourceError or similar)
-- [ ] Write tests for edge cases:
-  - [ ] No compatible models → error
-  - [ ] Only one model fits → return with reasoning
-  - [ ] Multiple models fit → highest quality selected
-  - [ ] GPU vs CPU mode differences
+- [X] Implement `recommend_model(resources, use_gpu) -> tuple[ModelSpec, str]`
+- [X] Call filter_compatible_models()
+- [X] Select highest quality compatible model
+- [X] Generate reasoning string (e.g., "8GB RAM available, GPU detected → medium model")
+- [X] Raise error if no compatible models (SystemResourceError or similar)
+- [X] Write tests for edge cases:
+  - [X] No compatible models → error
+  - [X] Only one model fits → return with reasoning
+  - [X] Multiple models fit → highest quality selected
+  - [X] GPU vs CPU mode differences
 
 **Dependencies**: T-007
 
