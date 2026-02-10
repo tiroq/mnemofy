@@ -25,7 +25,22 @@ Automatically detect meeting types (status, planning, design, demo, talk, incide
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+| Principle | Status | Evidence |
+|-----------|--------|----------|
+| 1. User Control Over Automation | ✅ PASS | Interactive menu for type selection, CLI flags override auto-detection, explicit --no-interactive flag |
+| 2. Safe-by-Default Execution | ✅ PASS | Graceful degradation to heuristic mode, timeout handling, explicit error messages, offline functionality |
+| 3. Transparency Over Magic | ✅ PASS | Confidence scores displayed, evidence phrases shown, LLM engine info logged, detection reasoning exposed |
+| 4. Deterministic First, Intelligent Second | ✅ PASS | Heuristic mode (deterministic) is default, LLM mode is optional enhancement, raw transcript always preserved |
+| 5. Local-First by Default | ✅ PASS | Heuristic classifier works offline, LLM features are opt-in, Ollama provides local LLM option |
+| 6. Progressive Disclosure of Complexity | ✅ PASS | Zero-config defaults (auto-detect + heuristic mode), advanced flags optional, interactive guidance provided |
+| 7. Performance Is a Feature | ✅ PASS | 2× transcript duration SLA (SC-004), <200ms menu latency (SC-009), token optimization via high-signal segments |
+| 8. Explicit Over Implicit Persistence | ✅ PASS | Config file opt-in, API keys via env vars only (never stored), no telemetry, transparent state |
+| 9. Media-Agnostic Input | N/A | Feature operates on existing transcripts, does not modify media input handling |
+| 10. OSS Quality Bar | ✅ PASS | Comprehensive spec with testable acceptance criteria, stable CLI contracts, documentation required (SC-006) |
+
+**Overall**: ✅ **CLEARED** - No constitutional violations. Feature aligns with all applicable principles.
+
+**Justification for any violations**: None required.
 
 ## Project Structure
 
