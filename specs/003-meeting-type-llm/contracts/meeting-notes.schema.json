@@ -1,0 +1,241 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MeetingNotes",
+  "description": "Complete meeting notes output schema with grounded items and references",
+  "type": "object",
+  "required": [
+    "meeting_type",
+    "confidence",
+    "evidence",
+    "template_used",
+    "generated_at",
+    "engine_info",
+    "decisions",
+    "action_items",
+    "mentions",
+    "transcript_references"
+  ],
+  "properties": {
+    "meeting_type": {
+      "type": "string",
+      "enum": ["status", "planning", "design", "demo", "talk", "incident", "discovery", "oneonone", "brainstorm"],
+      "description": "Selected meeting type"
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "description": "Classification confidence score"
+    },
+    "evidence": {
+      "type": "array",
+      "items": {"type": "string"},
+      "minItems": 1,
+      "description": "Keywords/phrases that led to classification"
+    },
+    "template_used": {
+      "type": "string",
+      "description": "Template filename used for rendering",
+      "examples": ["status.md", "planning.md"]
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of notes generation"
+    },
+    "engine_info": {
+      "type": "object",
+      "required": ["classification", "notes"],
+      "properties": {
+        "classification": {
+          "type": "string",
+          "enum": ["heuristic", "llm"],
+          "description": "Engine used for meeting type detection"
+        },
+        "notes": {
+          "type": "string",
+          "enum": ["basic", "llm"],
+          "description": "Engine used for notes generation"
+        }
+      },
+      "additionalProperties": false
+    },
+    "decisions": {
+      "type": "array",
+      "items": {"$ref": "#/definitions/GroundedItem"},
+      "description": "Extracted decisions with timestamp references"
+    },
+    "action_items": {
+      "type": "array",
+      "items": {"$ref": "#/definitions/GroundedItem"},
+      "description": "Extracted action items with timestamp references"
+    },
+    "mentions": {
+      "type": "array",
+      "items": {"$ref": "#/definitions/GroundedItem"},
+      "description": "Concrete mentions (people, dates, numbers) with timestamp references"
+    },
+    "type_specific_content": {
+      "type": "object",
+      "description": "Content for optional sections specific to meeting type",
+      "additionalProperties": true
+    },
+    "transcript_references": {
+      "type": "array",
+      "items": {"$ref": "#/definitions/TranscriptReference"},
+      "description": "All unique transcript references used in grounded items"
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "TranscriptReference": {
+      "type": "object",
+      "required": ["reference_id", "start_time", "end_time", "text_snippet"],
+      "properties": {
+        "reference_id": {
+          "type": "string",
+          "pattern": "^ref_[0-9]{3,}$",
+          "description": "Unique reference identifier",
+          "examples": ["ref_001", "ref_042"]
+        },
+        "start_time": {
+          "type": "string",
+          "pattern": "^([0-9]{1,2}:)?[0-5][0-9]:[0-5][0-9]$",
+          "description": "Timestamp in MM:SS or HH:MM:SS format",
+          "examples": ["23:45", "1:23:45"]
+        },
+        "end_time": {
+          "type": "string",
+          "pattern": "^([0-9]{1,2}:)?[0-5][0-9]:[0-5][0-9]$",
+          "description": "Timestamp in MM:SS or HH:MM:SS format",
+          "examples": ["24:02", "1:24:02"]
+        },
+        "speaker": {
+          "type": ["string", "null"],
+          "description": "Speaker name or ID if available"
+        },
+        "text_snippet": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 500,
+          "description": "Excerpt from transcript (exact quote, 50-200 chars recommended)"
+        }
+      },
+      "additionalProperties": false
+    },
+    "GroundedItem": {
+      "type": "object",
+      "required": ["text", "status", "references", "item_type"],
+      "properties": {
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The extracted claim or item"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["confirmed", "unclear"],
+          "description": "Confidence in extraction"
+        },
+        "reason": {
+          "type": ["string", "null"],
+          "description": "Required if status is 'unclear'. Explains why extraction is ambiguous."
+        },
+        "references": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/TranscriptReference"},
+          "minItems": 1,
+          "description": "Source timestamps linking to transcript"
+        },
+        "item_type": {
+          "type": "string",
+          "enum": ["decision", "action_item", "mention"],
+          "description": "Category of grounded item"
+        },
+        "metadata": {
+          "type": "object",
+          "description": "Optional additional data (e.g., owner for action items)",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false,
+      "if": {
+        "properties": {"status": {"const": "unclear"}}
+      },
+      "then": {
+        "required": ["reason"]
+      }
+    }
+  },
+  "examples": [
+    {
+      "meeting_type": "status",
+      "confidence": 0.68,
+      "evidence": ["update", "blocker", "progress", "working on"],
+      "template_used": "status.md",
+      "generated_at": "2026-02-10T15:20:33Z",
+      "engine_info": {
+        "classification": "heuristic",
+        "notes": "basic"
+      },
+      "decisions": [
+        {
+          "text": "Push release to next week due to testing delays",
+          "status": "confirmed",
+          "reason": null,
+          "references": [
+            {
+              "reference_id": "ref_003",
+              "start_time": "08:12",
+              "end_time": "08:28",
+              "speaker": "Bob",
+              "text_snippet": "Given the test failures, let's push the release to next week."
+            }
+          ],
+          "item_type": "decision",
+          "metadata": {}
+        }
+      ],
+      "action_items": [
+        {
+          "text": "Alice will coordinate with QA on test plan",
+          "status": "confirmed",
+          "reason": null,
+          "references": [
+            {
+              "reference_id": "ref_009",
+              "start_time": "14:22",
+              "end_time": "14:35",
+              "speaker": "Alice",
+              "text_snippet": "I'll coordinate with QA to finalize the test plan by Friday."
+            }
+          ],
+          "item_type": "action_item",
+          "metadata": {"owner": "Alice"}
+        }
+      ],
+      "mentions": [],
+      "type_specific_content": {
+        "progress": "Feature X completed, PR merged",
+        "blockers": ["Waiting on design review", "Flaky test in CI"],
+        "next_steps": "Complete testing, schedule release for next Monday"
+      },
+      "transcript_references": [
+        {
+          "reference_id": "ref_003",
+          "start_time": "08:12",
+          "end_time": "08:28",
+          "speaker": "Bob",
+          "text_snippet": "Given the test failures, let's push the release to next week."
+        },
+        {
+          "reference_id": "ref_009",
+          "start_time": "14:22",
+          "end_time": "14:35",
+          "speaker": "Alice",
+          "text_snippet": "I'll coordinate with QA to finalize the test plan by Friday."
+        }
+      ]
+    }
+  ]
+}
