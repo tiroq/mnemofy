@@ -10,10 +10,8 @@ This module provides:
 
 import logging
 from dataclasses import dataclass
-from io import StringIO
 from typing import TYPE_CHECKING, Dict, Optional, Tuple
 
-from rich.console import Console
 from rich.table import Table
 
 if TYPE_CHECKING:
@@ -264,7 +262,7 @@ def get_model_table(
     resources: "SystemResources",
     recommended: Optional[ModelSpec] = None,
     use_gpu: bool = True,
-) -> str:
+) -> Table:
     """Generate formatted table of all models with compatibility status.
     
     Creates a rich.Table showing all available models with their specifications,
@@ -276,7 +274,7 @@ def get_model_table(
         use_gpu: Whether GPU resources should be considered (default: True)
         
     Returns:
-        Formatted table string suitable for console.print()
+        Rich Table object ready for printing with console.print()
         
     Table Columns:
         - Model: Model name (e.g., 'tiny', 'base')
@@ -372,9 +370,4 @@ def get_model_table(
             status,
         )
     
-    # Convert table to string
-    string_buffer = StringIO()
-    console = Console(file=string_buffer, force_terminal=True, width=100)
-    console.print(table)
-    
-    return string_buffer.getvalue()
+    return table
