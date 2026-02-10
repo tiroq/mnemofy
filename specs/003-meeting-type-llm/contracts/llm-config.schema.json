@@ -1,0 +1,101 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "LLMConfiguration",
+  "description": "Configuration schema for LLM backend settings",
+  "type": "object",
+  "required": ["engine_type", "model", "timeout", "max_retries", "temperature", "enabled"],
+  "properties": {
+    "engine_type": {
+      "type": ["string", "null"],
+      "enum": ["openai", "ollama", "openai_compat", null],
+      "description": "LLM backend type. Null means LLM disabled."
+    },
+    "model": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Model identifier (e.g., 'gpt-4o-mini', 'llama3.2:3b')",
+      "examples": ["gpt-4o-mini", "llama3.2:3b", "gpt-4o"]
+    },
+    "base_url": {
+      "type": ["string", "null"],
+      "format": "uri",
+      "description": "API endpoint URL. Optional for OpenAI (uses default). Required for Ollama and openai_compat.",
+      "examples": ["https://api.openai.com/v1", "http://localhost:11434"]
+    },
+    "api_key_env_var": {
+      "type": "string",
+      "description": "Name of environment variable containing API key. NEVER the key itself.",
+      "examples": ["OPENAI_API_KEY", "MNEMOFY_LLM_API_KEY"],
+      "pattern": "^[A-Z_][A-Z0-9_]*$"
+    },
+    "timeout": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 300,
+      "description": "Request timeout in seconds",
+      "default": 30
+    },
+    "max_retries": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 5,
+      "description": "Maximum number of retry attempts on failure",
+      "default": 2
+    },
+    "temperature": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 2.0,
+      "description": "LLM sampling temperature. 0.0 for deterministic output.",
+      "default": 0.0
+    },
+    "enabled": {
+      "type": "boolean",
+      "description": "Whether LLM features are active",
+      "default": false
+    }
+  },
+  "additionalProperties": false,
+  "if": {
+    "properties": {
+      "engine_type": {
+        "enum": ["openai", "openai_compat"]
+      }
+    }
+  },
+  "then": {
+    "required": ["api_key_env_var"]
+  },
+  "examples": [
+    {
+      "engine_type": "openai",
+      "model": "gpt-4o-mini",
+      "base_url": "https://api.openai.com/v1",
+      "api_key_env_var": "OPENAI_API_KEY",
+      "timeout": 30,
+      "max_retries": 2,
+      "temperature": 0.0,
+      "enabled": true
+    },
+    {
+      "engine_type": "ollama",
+      "model": "llama3.2:3b",
+      "base_url": "http://localhost:11434",
+      "api_key_env_var": null,
+      "timeout": 60,
+      "max_retries": 1,
+      "temperature": 0.0,
+      "enabled": true
+    },
+    {
+      "engine_type": null,
+      "model": "gpt-4o-mini",
+      "base_url": null,
+      "api_key_env_var": "OPENAI_API_KEY",
+      "timeout": 30,
+      "max_retries": 2,
+      "temperature": 0.0,
+      "enabled": false
+    }
+  ]
+}
