@@ -287,11 +287,11 @@ This document breaks down the implementation into concrete tasks organized by us
 **Description**: Implement `is_interactive_environment()` to check for TTY.
 
 **Acceptance Criteria**:
-- [ ] Implement `is_interactive_environment() -> bool` in `src/mnemofy/tui/model_menu.py`
-- [ ] Check sys.stdin.isatty() and sys.stdout.isatty()
-- [ ] Return True only if both are TTY
-- [ ] Write tests with mocked stdin/stdout
-- [ ] Document when this returns False (CI, pipes, redirects)
+- [X] Implement `is_interactive_environment() -> bool` in `src/mnemofy/tui/model_menu.py`
+- [X] Check sys.stdin.isatty() and sys.stdout.isatty()
+- [X] Return True only if both are TTY
+- [X] Write tests with mocked stdin/stdout
+- [X] Document when this returns False (CI, pipes, redirects)
 
 **Dependencies**: None
 
@@ -311,17 +311,17 @@ This document breaks down the implementation into concrete tasks organized by us
 **Description**: Create interactive menu using rich library.
 
 **Acceptance Criteria**:
-- [ ] Implement ModelMenu class in `src/mnemofy/tui/model_menu.py`
-- [ ] Constructor: `__init__(models, recommended, resources)`
-- [ ] Method: `show() -> Optional[ModelSpec]`
-- [ ] Render model list with rich.console
-- [ ] Highlight recommended model (different color/icon)
-- [ ] Show warnings for risky models (low margin)
-- [ ] Handle arrow key navigation (↑/↓)
-- [ ] Handle Enter key (confirm selection)
-- [ ] Handle Esc key (cancel, return None)
-- [ ] Handle Ctrl+C gracefully (return None)
-- [ ] Write tests with mocked keyboard input
+- [X] Implement ModelMenu class in `src/mnemofy/tui/model_menu.py`
+- [X] Constructor: `__init__(models, recommended, resources)`
+- [X] Method: `show() -> Optional[ModelSpec]`
+- [X] Render model list with rich.console
+- [X] Highlight recommended model (different color/icon)
+- [X] Show warnings for risky models (low margin)
+- [X] Handle arrow key navigation (↑/↓)
+- [X] Handle Enter key (confirm selection)
+- [X] Handle Esc key (cancel, return None)
+- [X] Handle Ctrl+C gracefully (return None)
+- [X] Write tests with mocked keyboard input
 
 **Dependencies**: T-009, T-010, R-002
 
@@ -342,12 +342,12 @@ This document breaks down the implementation into concrete tasks organized by us
 **Description**: Show detailed model info when hovering/selecting in menu.
 
 **Acceptance Criteria**:
-- [ ] Display model description, speed rating, quality rating
-- [ ] Display RAM requirement vs available
-- [ ] Display VRAM requirement vs available (if GPU mode)
-- [ ] Update details panel as user navigates
-- [ ] Use rich.panel for formatting
-- [ ] Write test asserting details render correctly
+- [X] Display model description, speed rating, quality rating
+- [X] Display RAM requirement vs available
+- [X] Display VRAM requirement vs available (if GPU mode)
+- [X] Update details panel as user navigates
+- [X] Use rich.panel for formatting
+- [X] Write test asserting details render correctly
 
 **Dependencies**: T-011
 
