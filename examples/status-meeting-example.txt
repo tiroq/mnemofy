@@ -1,0 +1,35 @@
+[00:00-00:05] Good morning everyone. Let's start our daily standup.
+
+[00:05-00:12] John, can you share what you worked on yesterday and what you're planning for today?
+
+[00:12-00:25] Sure. Yesterday I finished the user authentication module and deployed it to staging. Today I'm planning to work on the password reset flow and hopefully get that into code review by end of day.
+
+[00:25-00:32] Great. Any blockers or things you need help with?
+
+[00:32-00:40] Not right now, but I might need Sarah to review my PR once it's ready since she's familiar with that part of the codebase.
+
+[00:40-00:45] Sounds good. Sarah, your turn.
+
+[00:45-00:58] Yesterday I completed the database migration for the new user schema. Today I'll be working on updating the API documentation to reflect those changes. I should have that done by this afternoon.
+
+[00:58-01:05] Excellent. Any blockers?
+
+[01:05-01:15] Just one thing - I'm waiting for the staging environment to be updated before I can test the integration. Is that something we can prioritize?
+
+[01:15-01:22] Yes, I'll make sure that gets done within the next hour. Mike, can you help Sarah with that?
+
+[01:22-01:28] Absolutely. I'll ping you once staging is ready, Sarah.
+
+[01:28-01:32] Perfect, thanks Mike.
+
+[01:32-01:38] Mike, what's your update?
+
+[01:38-01:52] I spent yesterday debugging the CI/CD pipeline issues. We had some failures in the test suite that were intermittent. I've identified the root cause - it was a race condition in one of the integration tests.
+
+[01:52-02:00] Today I'm going to fix that test and make sure all builds are passing. Then I'll help Sarah with the staging environment update.
+
+[02:00-02:05] Any blockers on your end?
+
+[02:05-02:12] No blockers. Everything should be straightforward from here.
+
+[02:12-02:20] Awesome. That's it for today's standup. Let's keep the momentum going. Thanks everyone.

@@ -13,7 +13,12 @@ import re
 from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
+import uuid
+
+from jinja2 import Environment, FileSystemLoader, TemplateNotFound
+
+from mnemofy.classifier import TranscriptReference, GroundedItem, MeetingType
 
 
 class NotesMode(Enum):
@@ -41,6 +46,69 @@ def seconds_to_mmss(seconds: float) -> str:
     minutes = int(seconds // 60)
     secs = int(seconds % 60)
     return f"{minutes:02d}:{secs:02d}"
+
+
+def load_jinja_template(template_name: str, custom_dir: Optional[Path] = None) -> Any:
+    """Load a Jinja2 template from bundled templates or user override directory.
+    
+    Template search order (first match wins):
+    1. Custom directory (if provided)
+    2. User config: ~/.config/mnemofy/templates/
+    3. Bundled templates: <package>/templates/
+    
+    Args:
+        template_name: Name of template file (e.g., "status.md", "planning.md")
+        custom_dir: Optional custom template directory path
+    
+    Returns:
+        Jinja2 Template object ready for rendering
+    
+    Raises:
+        TemplateNotFound: If template not found in any search path
+        jinja2.TemplateError: If template has syntax errors
+    
+    Examples:
+        >>> template = load_jinja_template("status.md")
+        >>> output = template.render(decisions=[], actions=[], title="Daily Standup")
+        
+        >>> custom_path = Path("/custom/templates")
+        >>> template = load_jinja_template("planning.md", custom_dir=custom_path)
+    """
+    search_paths: List[Path] = []
+    
+    # 1. Custom directory (highest priority)
+    if custom_dir:
+        search_paths.append(custom_dir)
+    
+    # 2. User config directory
+    user_config = Path.home() / ".config" / "mnemofy" / "templates"
+    if user_config.exists():
+        search_paths.append(user_config)
+    
+    # 3. Bundled templates (fallback)
+    bundled_templates = Path(__file__).parent / "templates"
+    search_paths.append(bundled_templates)
+    
+    # Try each path in order
+    for search_path in search_paths:
+        try:
+            env = Environment(
+                loader=FileSystemLoader(str(search_path)),
+                autoescape=False,  # Templates are Markdown, not HTML
+                trim_blocks=True,
+                lstrip_blocks=True,
+            )
+            # Add custom filters for timestamp formatting
+            env.filters['seconds_to_mmss'] = seconds_to_mmss
+            template = env.get_template(template_name)
+            return template
+        except TemplateNotFound:
+            continue
+    
+    # No template found in any path
+    raise TemplateNotFound(
+        f"Template '{template_name}' not found in: {', '.join(str(p) for p in search_paths)}"
+    )
 
 
 class StructuredNotesGenerator:
@@ -456,3 +524,329 @@ class NoteGenerator:
         except (ValueError, KeyError, IndexError):
             # Fall back for backwards compatibility
             return f"# {title}\n\n(Unable to generate structured notes)"
+
+
+class BasicNotesExtractor:
+    """Extract structured information from transcripts using deterministic rules.
+    
+    Operates completely offline without LLM dependencies. Uses keyword matching,
+    pattern recognition, and heuristics to extract:
+    - Decisions (explicit decision markers)
+    - Action items (commitments and tasks)
+    - Mentions (names, numbers, URLs, dates)
+    - Timestamp references for all extracted items
+    
+    All extracted items are grounded with transcript references to ensure traceability.
+    """
+    
+    # Decision keywords (extended from StructuredNotesGenerator)
+    DECISION_KEYWORDS = {
+        "decided", "decision", "agree", "agreed", "approved", "approve",
+        "will go", "consensus", "let's go", "settled on", "finalized",
+        "we'll do", "going with", "chosen", "selected"
+    }
+    
+    # Action keywords
+    ACTION_KEYWORDS = {
+        "will", "going to", "need to", "should", "must", "task",
+        "follow up", "next step", "action item", "todo", "to-do",
+        "assign", "owner", "responsible", "commit", "promise"
+    }
+    
+    # Pattern for extracting names (capitalized words, avoiding common words)
+    NAME_PATTERN = r"\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b"
+    COMMON_WORDS = {
+        "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday",
+        "January", "February", "March", "April", "May", "June", "July", "August",
+        "September", "October", "November", "December", "I", "The", "A", "An"
+    }
+    
+    # Pattern for numbers, currency, percentages
+    NUMBER_PATTERN = r"(\$[\d,.]+[MKB]?|\d+\.?\d*%|\d+(?:\.\d+)?(?:\s*(?:million|thousand|billion|M|K|B))?)"
+    
+    # Pattern for URLs
+    URL_PATTERN = r"https?://[^\s)]+|www\.[^\s)]+"
+    
+    # Pattern for dates
+    DATE_PATTERN = r"\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2}(?:,?\s+\d{4})?|\d{4}-\d{2}-\d{2}|\d{1,2}/\d{1,2}/\d{2,4}\b"
+    
+    def __init__(self):
+        """Initialize basic notes extractor."""
+        pass
+    
+    def extract_decisions(
+        self,
+        segments: List[Dict[str, Any]],
+        transcript_text: Optional[str] = None
+    ) -> List[GroundedItem]:
+        """Extract decision items from transcript segments.
+        
+        Looks for decision keywords and extracts surrounding context.
+        
+        Args:
+            segments: List of transcript segments with start, end, text, speaker
+            transcript_text: Optional full transcript text (will be constructed if not provided)
+        
+        Returns:
+            List of GroundedItem objects with decision text and timestamp references
+        """
+        decisions = []
+        
+        for segment in segments:
+            text = segment.get("text", "")
+            text_lower = text.lower()
+            
+            # Check if segment contains decision keywords
+            for keyword in self.DECISION_KEYWORDS:
+                if keyword in text_lower:
+                    # Create reference
+                    ref = TranscriptReference(
+                        reference_id=str(uuid.uuid4())[:8],
+                        start_time=segment.get("start", 0),
+                        end_time=segment.get("end", 0),
+                        speaker=segment.get("speaker"),
+                        text_snippet=text[:100]  # First 100 chars
+                    )
+                    
+                    # Create grounded decision item
+                    decision = GroundedItem(
+                        text=text.strip(),
+                        status="confirmed",
+                        reason=None,
+                        references=[ref],
+                        item_type="decision",
+                        metadata={"keyword": keyword}
+                    )
+                    decisions.append(decision)
+                    break  # Only count each segment once
+        
+        return decisions
+    
+    def extract_action_items(
+        self,
+        segments: List[Dict[str, Any]],
+        transcript_text: Optional[str] = None
+    ) -> List[GroundedItem]:
+        """Extract action items from transcript segments.
+        
+        Looks for action keywords and commitment phrases.
+        
+        Args:
+            segments: List of transcript segments with start, end, text, speaker
+            transcript_text: Optional full transcript text
+        
+        Returns:
+            List of GroundedItem objects with action items and timestamp references
+        """
+        actions = []
+        
+        for segment in segments:
+            text = segment.get("text", "")
+            text_lower = text.lower()
+            
+            # Check if segment contains action keywords
+            for keyword in self.ACTION_KEYWORDS:
+                if keyword in text_lower:
+                    # Create reference
+                    ref = TranscriptReference(
+                        reference_id=str(uuid.uuid4())[:8],
+                        start_time=segment.get("start", 0),
+                        end_time=segment.get("end", 0),
+                        speaker=segment.get("speaker"),
+                        text_snippet=text[:100]
+                    )
+                    
+                    # Try to extract owner from speaker or text
+                    owner = segment.get("speaker")
+                    
+                    # Create grounded action item
+                    action = GroundedItem(
+                        text=text.strip(),
+                        status="confirmed",
+                        reason=None,
+                        references=[ref],
+                        item_type="action",
+                        metadata={"keyword": keyword, "owner": owner}
+                    )
+                    actions.append(action)
+                    break  # Only count each segment once
+        
+        return actions
+    
+    def extract_mentions(
+        self,
+        segments: List[Dict[str, Any]],
+        transcript_text: Optional[str] = None
+    ) -> List[GroundedItem]:
+        """Extract mentions (names, numbers, URLs, dates) from transcript.
+        
+        Args:
+            segments: List of transcript segments
+            transcript_text: Optional full transcript text
+        
+        Returns:
+            List of GroundedItem objects with mentions and timestamp references
+        """
+        mentions = []
+        
+        # Build full text if not provided
+        if not transcript_text:
+            transcript_text = " ".join(s.get("text", "") for s in segments)
+        
+        # Extract different types of mentions
+        mention_patterns = [
+            (self.URL_PATTERN, "url"),
+            (self.DATE_PATTERN, "date"),
+            (self.NUMBER_PATTERN, "number"),
+        ]
+        
+        for pattern, mention_type in mention_patterns:
+            for match in re.finditer(pattern, transcript_text):
+                matched_text = match.group(0)
+                
+                # Find segment containing this mention
+                char_pos = match.start()
+                current_pos = 0
+                
+                for segment in segments:
+                    seg_text = segment.get("text", "")
+                    if current_pos <= char_pos < current_pos + len(seg_text):
+                        # Found the segment
+                        ref = TranscriptReference(
+                            reference_id=str(uuid.uuid4())[:8],
+                            start_time=segment.get("start", 0),
+                            end_time=segment.get("end", 0),
+                            speaker=segment.get("speaker"),
+                            text_snippet=seg_text[:100]
+                        )
+                        
+                        mention = GroundedItem(
+                            text=matched_text,
+                            status="confirmed",
+                            reason=None,
+                            references=[ref],
+                            item_type="mention",
+                            metadata={"mention_type": mention_type}
+                        )
+                        mentions.append(mention)
+                        break
+                    
+                    current_pos += len(seg_text) + 1  # +1 for space
+        
+        return mentions
+    
+    def extract_all(
+        self,
+        segments: List[Dict[str, Any]],
+        meeting_type: Optional[MeetingType] = None
+    ) -> Dict[str, List[GroundedItem]]:
+        """Extract all structured information from transcript.
+        
+        Args:
+            segments: List of transcript segments
+            meeting_type: Optional detected meeting type for context
+        
+        Returns:
+            Dictionary with keys: decisions, actions, mentions
+        """
+        transcript_text = " ".join(s.get("text", "") for s in segments)
+        
+        return {
+            "decisions": self.extract_decisions(segments, transcript_text),
+            "actions": self.extract_action_items(segments, transcript_text),
+            "mentions": self.extract_mentions(segments, transcript_text),
+        }
+
+
+def render_meeting_notes(
+    meeting_type: MeetingType,
+    extracted_items: Dict[str, List[GroundedItem]],
+    metadata: Dict[str, Any],
+    custom_template_dir: Optional[Path] = None
+) -> str:
+    """Render meeting notes using the appropriate template for the meeting type.
+    
+    Args:
+        meeting_type: Detected meeting type (determines template selection)
+        extracted_items: Dictionary with decisions, actions, mentions, etc.
+        metadata: Meeting metadata (date, duration, confidence, etc.)
+        custom_template_dir: Optional custom template directory
+    
+    Returns:
+        Rendered Markdown notes as string
+    
+    Raises:
+        TemplateNotFound: If template file not found
+        jinja2.TemplateError: If template has syntax errors
+    
+    Examples:
+        >>> items = {
+        ...     "decisions": [GroundedItem(text="Use Python", ...)],
+        ...     "actions": [GroundedItem(text="Write tests", ...)],
+        ...     "mentions": []
+        ... }
+        >>> metadata = {"date": "2026-02-10", "duration": "30min", "confidence": "0.85"}
+        >>> notes = render_meeting_notes(MeetingType.PLANNING, items, metadata)
+    """
+    # Load appropriate template
+    template_name = f"{meeting_type.value}.md"
+    template = load_jinja_template(template_name, custom_template_dir)
+    
+    # Prepare template context
+    context = {
+        # Metadata
+        "title": metadata.get("title", f"{meeting_type.value.title()} Meeting"),
+        "date": metadata.get("date", datetime.now().strftime("%Y-%m-%d")),
+        "duration": metadata.get("duration", "N/A"),
+        "confidence": metadata.get("confidence", "N/A"),
+        "engine": metadata.get("engine", "heuristic"),
+        "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        
+        # Extracted items (default to empty lists)
+        "decisions": extracted_items.get("decisions", []),
+        "actions": extracted_items.get("actions", []),
+        "mentions": extracted_items.get("mentions", []),
+        
+        # Meeting-type-specific mappings
+        "progress_items": extracted_items.get("progress_items", []),
+        "blockers": extracted_items.get("blockers", []),
+        "next_steps": extracted_items.get("next_steps", []),
+        "objectives": extracted_items.get("objectives", []),
+        "milestones": extracted_items.get("milestones", []),
+        "priorities": extracted_items.get("priorities", []),
+        "resources": extracted_items.get("resources", []),
+        "dependencies": extracted_items.get("dependencies", []),
+        "goals": extracted_items.get("goals", []),
+        "architecture": extracted_items.get("architecture", []),
+        "components": extracted_items.get("components", []),
+        "tradeoffs": extracted_items.get("tradeoffs", []),
+        "questions": extracted_items.get("questions", []),
+        "features": extracted_items.get("features", []),
+        "highlights": extracted_items.get("highlights", []),
+        "feedback": extracted_items.get("feedback", []),
+        "overview": extracted_items.get("overview", []),
+        "key_points": extracted_items.get("key_points", []),
+        "examples": extracted_items.get("examples", []),
+        "takeaways": extracted_items.get("takeaways", []),
+        "summary": extracted_items.get("summary", []),
+        "root_cause": extracted_items.get("root_cause", []),
+        "timeline": extracted_items.get("timeline", []),
+        "impact": extracted_items.get("impact", []),
+        "mitigations": extracted_items.get("mitigations", []),
+        "prevention": extracted_items.get("prevention", []),
+        "pain_points": extracted_items.get("pain_points", []),
+        "workflow": extracted_items.get("workflow", []),
+        "insights": extracted_items.get("insights", []),
+        "requirements": extracted_items.get("requirements", []),
+        "opportunities": extracted_items.get("opportunities", []),
+        "checkin": extracted_items.get("checkin", []),
+        "progress": extracted_items.get("progress", []),
+        "challenges": extracted_items.get("challenges", []),
+        "growth": extracted_items.get("growth", []),
+        "ideas": extracted_items.get("ideas", []),
+        "promising": extracted_items.get("promising", []),
+        "constraints": extracted_items.get("constraints", []),
+    }
+    
+    # Render template
+    return template.render(**context)
