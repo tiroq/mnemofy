@@ -10,7 +10,7 @@
 
 {% if objectives %}
 {% for obj in objectives %}
-- **{{ obj.text }}**{% if obj.references %} ([{{ obj.references[0].start_time | round(0) | int }}:{{ (obj.references[0].start_time % 60) | round(0) | int | string | rjust(2, '0') }}](transcript://{{ obj.references[0].reference_id }})){% endif %}
+- **{{ obj.text }}**{% if obj.references %} ([{{ obj.references[0].start_time | seconds_to_mmss }}](transcript://{{ obj.references[0].reference_id }})){% endif %}
 {% endfor %}
 {% else %}
 *No objectives explicitly stated*
@@ -22,7 +22,7 @@
 
 {% if milestones %}
 {% for milestone in milestones %}
-- **{{ milestone.text }}**{% if milestone.references %} ([{{ milestone.references[0].start_time | round(0) | int }}:{{ (milestone.references[0].start_time % 60) | round(0) | int | string | rjust(2, '0') }}](transcript://{{ milestone.references[0].reference_id }})){% endif %}
+- **{{ milestone.text }}**{% if milestone.references %} ([{{ milestone.references[0].start_time | seconds_to_mmss }}](transcript://{{ milestone.references[0].reference_id }})){% endif %}
   {% if milestone.metadata and milestone.metadata.deadline %}- Deadline: {{ milestone.metadata.deadline }}{% endif %}
   {% if milestone.status == "unclear" %}_Note: {{ milestone.reason }}_{% endif %}
 {% endfor %}
@@ -36,7 +36,7 @@
 
 {% if priorities %}
 {% for priority in priorities %}
-- **{{ priority.text }}**{% if priority.references %} ([{{ priority.references[0].start_time | round(0) | int }}:{{ (priority.references[0].start_time % 60) | round(0) | int | string | rjust(2, '0') }}](transcript://{{ priority.references[0].reference_id }})){% endif %}
+- **{{ priority.text }}**{% if priority.references %} ([{{ priority.references[0].start_time | seconds_to_mmss }}](transcript://{{ priority.references[0].reference_id }})){% endif %}
   {% if priority.metadata and priority.metadata.priority_level %}- Priority: {{ priority.metadata.priority_level }}{% endif %}
 {% endfor %}
 {% else %}
@@ -49,7 +49,7 @@
 
 {% if resources %}
 {% for resource in resources %}
-- **{{ resource.text }}**{% if resource.references %} ([{{ resource.references[0].start_time | round(0) | int }}:{{ (resource.references[0].start_time % 60) | round(0) | int | string | rjust(2, '0') }}](transcript://{{ resource.references[0].reference_id }})){% endif %}
+- **{{ resource.text }}**{% if resource.references %} ([{{ resource.references[0].start_time | seconds_to_mmss }}](transcript://{{ resource.references[0].reference_id }})){% endif %}
 {% endfor %}
 {% else %}
 *No resource allocations discussed*
@@ -61,7 +61,7 @@
 
 {% if dependencies %}
 {% for dep in dependencies %}
-- **{{ dep.text }}**{% if dep.references %} ([{{ dep.references[0].start_time | round(0) | int }}:{{ (dep.references[0].start_time % 60) | round(0) | int | string | rjust(2, '0') }}](transcript://{{ dep.references[0].reference_id }})){% endif %}
+- **{{ dep.text }}**{% if dep.references %} ([{{ dep.references[0].start_time | seconds_to_mmss }}](transcript://{{ dep.references[0].reference_id }})){% endif %}
   {% if dep.status == "unclear" %}_Note: {{ dep.reason }}_{% endif %}
 {% endfor %}
 {% else %}
@@ -74,7 +74,7 @@
 
 {% if decisions %}
 {% for decision in decisions %}
-- **{{ decision.text }}**{% if decision.references %} ([{{ decision.references[0].start_time | round(0) | int }}:{{ (decision.references[0].start_time % 60) | round(0) | int | string | rjust(2, '0') }}](transcript://{{ decision.references[0].reference_id }})){% endif %}
+- **{{ decision.text }}**{% if decision.references %} ([{{ decision.references[0].start_time | seconds_to_mmss }}](transcript://{{ decision.references[0].reference_id }})){% endif %}
 {% endfor %}
 {% else %}
 *No decisions made*
@@ -86,7 +86,7 @@
 
 {% if actions %}
 {% for action in actions %}
-- **{{ action.text }}**{% if action.references %} ([{{ action.references[0].start_time | round(0) | int }}:{{ (action.references[0].start_time % 60) | round(0) | int | string | rjust(2, '0') }}](transcript://{{ action.references[0].reference_id }})){% endif %}
+- **{{ action.text }}**{% if action.references %} ([{{ action.references[0].start_time | seconds_to_mmss }}](transcript://{{ action.references[0].reference_id }})){% endif %}
   {% if action.metadata and action.metadata.owner %}- Owner: {{ action.metadata.owner }}{% endif %}
 {% endfor %}
 {% else %}

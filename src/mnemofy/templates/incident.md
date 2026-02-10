@@ -10,7 +10,7 @@
 
 {% if summary %}
 {% for item in summary %}
-- **{{ item.text }}**{% if item.references %} ([{{ item.references[0].start_time | round(0) | int }}:{{ (item.references[0].start_time % 60) | round(0) | int | string | rjust(2, '0') }}](transcript://{{ item.references[0].reference_id }})){% endif %}
+- **{{ item.text }}**{% if item.references %} ([{{ item.references[0].start_time | seconds_to_mmss }}](transcript://{{ item.references[0].reference_id }})){% endif %}
   {% if item.status == "unclear" %}_Note: {{ item.reason }}_{% endif %}
 {% endfor %}
 {% else %}
@@ -23,7 +23,7 @@
 
 {% if root_cause %}
 {% for cause in root_cause %}
-- **{{ cause.text }}**{% if cause.references %} ([{{ cause.references[0].start_time | round(0) | int }}:{{ (cause.references[0].start_time % 60) | round(0) | int | string | rjust(2, '0') }}](transcript://{{ cause.references[0].reference_id }})){% endif %}
+- **{{ cause.text }}**{% if cause.references %} ([{{ cause.references[0].start_time | seconds_to_mmss }}](transcript://{{ cause.references[0].reference_id }})){% endif %}
   {% if cause.status == "unclear" %}_Note: {{ cause.reason }}_{% endif %}
 {% endfor %}
 {% else %}
@@ -36,7 +36,7 @@
 
 {% if timeline %}
 {% for event in timeline %}
-- **{{ event.text }}**{% if event.references %} ([{{ event.references[0].start_time | round(0) | int }}:{{ (event.references[0].start_time % 60) | round(0) | int | string | rjust(2, '0') }}](transcript://{{ event.references[0].reference_id }})){% endif %}
+- **{{ event.text }}**{% if event.references %} ([{{ event.references[0].start_time | seconds_to_mmss }}](transcript://{{ event.references[0].reference_id }})){% endif %}
 {% endfor %}
 {% else %}
 *No timeline captured*
@@ -48,7 +48,7 @@
 
 {% if impact %}
 {% for item in impact %}
-- **{{ item.text }}**{% if item.references %} ([{{ item.references[0].start_time | round(0) | int }}:{{ (item.references[0].start_time % 60) | round(0) | int | string | rjust(2, '0') }}](transcript://{{ item.references[0].reference_id }})){% endif %}
+- **{{ item.text }}**{% if item.references %} ([{{ item.references[0].start_time | seconds_to_mmss }}](transcript://{{ item.references[0].reference_id }})){% endif %}
 {% endfor %}
 {% else %}
 *Impact not assessed*
@@ -60,7 +60,7 @@
 
 {% if mitigations %}
 {% for action in mitigations %}
-- **{{ action.text }}**{% if action.references %} ([{{ action.references[0].start_time | round(0) | int }}:{{ (action.references[0].start_time % 60) | round(0) | int | string | rjust(2, '0') }}](transcript://{{ action.references[0].reference_id }})){% endif %}
+- **{{ action.text }}**{% if action.references %} ([{{ action.references[0].start_time | seconds_to_mmss }}](transcript://{{ action.references[0].reference_id }})){% endif %}
   {% if action.metadata and action.metadata.owner %}- Owner: {{ action.metadata.owner }}{% endif %}
 {% endfor %}
 {% else %}
@@ -73,7 +73,7 @@
 
 {% if prevention %}
 {% for measure in prevention %}
-- **{{ measure.text }}**{% if measure.references %} ([{{ measure.references[0].start_time | round(0) | int }}:{{ (measure.references[0].start_time % 60) | round(0) | int | string | rjust(2, '0') }}](transcript://{{ measure.references[0].reference_id }})){% endif %}
+- **{{ measure.text }}**{% if measure.references %} ([{{ measure.references[0].start_time | seconds_to_mmss }}](transcript://{{ measure.references[0].reference_id }})){% endif %}
 {% endfor %}
 {% else %}
 *No prevention measures discussed*
@@ -85,7 +85,7 @@
 
 {% if actions %}
 {% for action in actions %}
-- **{{ action.text }}**{% if action.references %} ([{{ action.references[0].start_time | round(0) | int }}:{{ (action.references[0].start_time % 60) | round(0) | int | string | rjust(2, '0') }}](transcript://{{ action.references[0].reference_id }})){% endif %}
+- **{{ action.text }}**{% if action.references %} ([{{ action.references[0].start_time | seconds_to_mmss }}](transcript://{{ action.references[0].reference_id }})){% endif %}
   {% if action.metadata and action.metadata.owner %}- Owner: {{ action.metadata.owner }}{% endif %}
   {% if action.metadata and action.metadata.deadline %}- Deadline: {{ action.metadata.deadline }}{% endif %}
 {% endfor %}

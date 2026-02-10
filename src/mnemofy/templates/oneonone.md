@@ -10,7 +10,7 @@
 
 {% if checkin %}
 {% for item in checkin %}
-- **{{ item.text }}**{% if item.references %} ([{{ item.references[0].start_time | round(0) | int }}:{{ (item.references[0].start_time % 60) | round(0) | int | string | rjust(2, '0') }}](transcript://{{ item.references[0].reference_id }})){% endif %}
+- **{{ item.text }}**{% if item.references %} ([{{ item.references[0].start_time | seconds_to_mmss }}](transcript://{{ item.references[0].reference_id }})){% endif %}
 {% endfor %}
 {% else %}
 *No check-in topics*
@@ -22,7 +22,7 @@
 
 {% if progress %}
 {% for item in progress %}
-- **{{ item.text }}**{% if item.references %} ([{{ item.references[0].start_time | round(0) | int }}:{{ (item.references[0].start_time % 60) | round(0) | int | string | rjust(2, '0') }}](transcript://{{ item.references[0].reference_id }})){% endif %}
+- **{{ item.text }}**{% if item.references %} ([{{ item.references[0].start_time | seconds_to_mmss }}](transcript://{{ item.references[0].reference_id }})){% endif %}
 {% endfor %}
 {% else %}
 *No progress discussed*
@@ -34,7 +34,7 @@
 
 {% if challenges %}
 {% for challenge in challenges %}
-- **{{ challenge.text }}**{% if challenge.references %} ([{{ challenge.references[0].start_time | round(0) | int }}:{{ (challenge.references[0].start_time % 60) | round(0) | int | string | rjust(2, '0') }}](transcript://{{ challenge.references[0].reference_id }})){% endif %}
+- **{{ challenge.text }}**{% if challenge.references %} ([{{ challenge.references[0].start_time | seconds_to_mmss }}](transcript://{{ challenge.references[0].reference_id }})){% endif %}
   {% if challenge.status == "unclear" %}_Note: {{ challenge.reason }}_{% endif %}
 {% endfor %}
 {% else %}
@@ -47,7 +47,7 @@
 
 {% if growth %}
 {% for item in growth %}
-- **{{ item.text }}**{% if item.references %} ([{{ item.references[0].start_time | round(0) | int }}:{{ (item.references[0].start_time % 60) | round(0) | int | string | rjust(2, '0') }}](transcript://{{ item.references[0].reference_id }})){% endif %}
+- **{{ item.text }}**{% if item.references %} ([{{ item.references[0].start_time | seconds_to_mmss }}](transcript://{{ item.references[0].reference_id }})){% endif %}
 {% endfor %}
 {% else %}
 *No career/growth topics*
@@ -59,7 +59,7 @@
 
 {% if feedback %}
 {% for item in feedback %}
-- **{{ item.text }}**{% if item.references %} ([{{ item.references[0].start_time | round(0) | int }}:{{ (item.references[0].start_time % 60) | round(0) | int | string | rjust(2, '0') }}](transcript://{{ item.references[0].reference_id }})){% endif %}
+- **{{ item.text }}**{% if item.references %} ([{{ item.references[0].start_time | seconds_to_mmss }}](transcript://{{ item.references[0].reference_id }})){% endif %}
 {% endfor %}
 {% else %}
 *No feedback provided*
@@ -71,7 +71,7 @@
 
 {% if goals %}
 {% for goal in goals %}
-- **{{ goal.text }}**{% if goal.references %} ([{{ goal.references[0].start_time | round(0) | int }}:{{ (goal.references[0].start_time % 60) | round(0) | int | string | rjust(2, '0') }}](transcript://{{ goal.references[0].reference_id }})){% endif %}
+- **{{ goal.text }}**{% if goal.references %} ([{{ goal.references[0].start_time | seconds_to_mmss }}](transcript://{{ goal.references[0].reference_id }})){% endif %}
 {% endfor %}
 {% else %}
 *No goals set*
@@ -83,7 +83,7 @@
 
 {% if actions %}
 {% for action in actions %}
-- **{{ action.text }}**{% if action.references %} ([{{ action.references[0].start_time | round(0) | int }}:{{ (action.references[0].start_time % 60) | round(0) | int | string | rjust(2, '0') }}](transcript://{{ action.references[0].reference_id }})){% endif %}
+- **{{ action.text }}**{% if action.references %} ([{{ action.references[0].start_time | seconds_to_mmss }}](transcript://{{ action.references[0].reference_id }})){% endif %}
   {% if action.metadata and action.metadata.owner %}- Owner: {{ action.metadata.owner }}{% endif %}
 {% endfor %}
 {% else %}

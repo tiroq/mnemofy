@@ -334,12 +334,11 @@ mnemofy meeting.mp3 --notes llm --verbose
 | Variable | Description | Example |
 |----------|-------------|---------|
 | `OPENAI_API_KEY` | OpenAI API key | `sk-proj-...` |
-| `MNEMOFY_LLM_API_KEY` | Generic LLM API key | `sk-...` |
 | `MNEMOFY_LLM_ENGINE` | Engine type | `openai`, `ollama` |
 | `MNEMOFY_LLM_MODEL` | Model name | `gpt-4o-mini` |
 | `MNEMOFY_LLM_BASE_URL` | API endpoint | `http://localhost:11434` |
 | `MNEMOFY_LLM_TIMEOUT` | Timeout (seconds) | `30` |
-| `MNEMOFY_LLM_RETRIES` | Max retries | `2` |
+| `OLLAMA_HOST` | Ollama host (alternative to BASE_URL) | `http://localhost:11434` |
 
 ---
 

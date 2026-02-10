@@ -98,6 +98,8 @@ def load_jinja_template(template_name: str, custom_dir: Optional[Path] = None) -
                 trim_blocks=True,
                 lstrip_blocks=True,
             )
+            # Add custom filters for timestamp formatting
+            env.filters['seconds_to_mmss'] = seconds_to_mmss
             template = env.get_template(template_name)
             return template
         except TemplateNotFound:
