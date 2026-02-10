@@ -5,11 +5,15 @@ This module provides:
 - MODEL_SPECS: Database of available models with memory requirements and ratings
 - filter_compatible_models: Filter models based on available system resources
 - recommend_model: Select best model with reasoning explanation
+- get_model_table: Generate formatted table of models with compatibility status
 """
 
 import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Dict, Optional, Tuple
+
+from rich.console import Console
+from rich.table import Table
 
 if TYPE_CHECKING:
     from mnemofy.resources import SystemResources
@@ -252,3 +256,122 @@ def recommend_model(
     logger.debug(f"Reasoning: {reasoning}")
     
     return best_model, reasoning
+
+
+def get_model_table(
+    resources: "SystemResources",
+    recommended: Optional[ModelSpec] = None,
+    use_gpu: bool = True,
+) -> str:
+    """Generate formatted table of all models with compatibility status.
+    
+    Creates a rich.Table showing all available models with their specifications,
+    memory requirements, and compatibility status based on available system resources.
+    
+    Args:
+        resources: Detected system resources (CPU, RAM, GPU)
+        recommended: Optional recommended model to highlight
+        use_gpu: Whether GPU resources should be considered (default: True)
+        
+    Returns:
+        Formatted table string suitable for console.print()
+        
+    Table Columns:
+        - Model: Model name (e.g., 'tiny', 'base')
+        - Speed: Speed rating visualization (█ symbols, 1-5 scale)
+        - Quality: Quality rating visualization (█ symbols, 1-5 scale)
+        - RAM Req: Minimum RAM requirement in GB
+        - VRAM Req: Minimum VRAM requirement (GPU only, N/A for CPU)
+        - Status: ✓ Recommended, ✓ Compatible, ⚠ Risky, ✗ Incompatible
+        
+    Status Indicators:
+        - ✓ Recommended: This is the recommended model
+        - ✓ Compatible: Model fits in available resources
+        - ⚠ Risky: Model fits but with <20% safety margin
+        - ✗ Incompatible: Model doesn't fit in available resources
+    """
+    table = Table(title="Available Whisper Models")
+    table.add_column("Model", style="cyan", no_wrap=True)
+    table.add_column("Speed", justify="center")
+    table.add_column("Quality", justify="center")
+    table.add_column("RAM", justify="right")
+    table.add_column("VRAM", justify="right")
+    table.add_column("Status", justify="center")
+    
+    # Calculate safe RAM (85% to account for system usage)
+    safe_ram_gb = resources.available_ram_gb * 0.85
+    safe_vram_gb = None
+    if use_gpu and resources.has_gpu and resources.available_vram_gb is not None:
+        safe_vram_gb = resources.available_vram_gb
+    
+    # Iterate through all models in order
+    for model_name in list_models():
+        model = MODEL_SPECS[model_name]
+        
+        # Generate speed and quality visualizations (filled/empty bars)
+        speed_bar = "█" * model.speed_rating + "░" * (5 - model.speed_rating)
+        quality_bar = "█" * model.quality_rating + "░" * (5 - model.quality_rating)
+        
+        # Format memory requirements
+        ram_req = f"{model.min_ram_gb:.1f} GB"
+        
+        if use_gpu and resources.has_gpu:
+            if model.min_vram_gb is None:
+                vram_req = "N/A"
+            else:
+                vram_req = f"{model.min_vram_gb:.1f} GB"
+        else:
+            vram_req = "N/A"
+        
+        # Determine compatibility status
+        ram_compatible = model.min_ram_gb <= safe_ram_gb
+        
+        # Check VRAM compatibility if GPU is available
+        vram_compatible = True
+        if use_gpu and resources.has_gpu:
+            if model.min_vram_gb is not None:
+                if safe_vram_gb is not None:
+                    vram_compatible = model.min_vram_gb <= safe_vram_gb
+                else:
+                    # GPU with unified memory, assume compatible if RAM check passes
+                    vram_compatible = ram_compatible
+        
+        is_compatible = ram_compatible and vram_compatible
+        
+        # Determine if model is risky (fits but with low margin)
+        is_risky = False
+        if is_compatible:
+            ram_margin = (safe_ram_gb - model.min_ram_gb) / model.min_ram_gb
+            if use_gpu and resources.has_gpu and model.min_vram_gb is not None and safe_vram_gb:
+                vram_margin = (safe_vram_gb - model.min_vram_gb) / model.min_vram_gb
+                is_risky = ram_margin < 0.2 or vram_margin < 0.2
+            else:
+                is_risky = ram_margin < 0.2
+        
+        # Generate status string with styling
+        if recommended and model.name == recommended.name:
+            status = "[green]✓ Recommended[/green]"
+        elif is_compatible:
+            if is_risky:
+                status = "[yellow]⚠ Risky[/yellow]"
+            else:
+                status = "[green]✓ Compatible[/green]"
+        else:
+            status = "[red]✗ Incompatible[/red]"
+        
+        # Add row to table
+        table.add_row(
+            model.name,
+            speed_bar,
+            quality_bar,
+            ram_req,
+            vram_req,
+            status,
+        )
+    
+    # Convert table to string
+    console = Console()
+    with console.capture() as capture:
+        console.print(table)
+    
+    return capture.getvalue()
