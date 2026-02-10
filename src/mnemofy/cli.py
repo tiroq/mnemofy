@@ -456,26 +456,11 @@ def transcribe(
                     # Display detection result
                     confidence_pct = classification_result.confidence * 100
                     console.print(f"\n[bold]Detected Meeting Type:[/bold] {detected_type.value}")
-                    console.print(f"[dim]Confidence: {confidence_pct:.1f}%[/dim]")
-                    if classification_result.evidence:
-                        console.print(f"[dim]Evidence: {', '.join(classification_result.evidence[:3])}[/dim]")
-                    
-                    progress.update(task, description="[green]✓ Meeting type detected
-                    # Display detection result
-                    confidence_pct = classification_result.confidence * 100
-                    console.print(f"\n[bold]Detected Meeting Type:[/bold] {detected_type.value}")
-                    console.print(f"[dim]Confidence: {confidence_pct:.1f}%[/dim]")
+                    console.print(f"[dim]Confidence: {confidence_pct:.1f}% (Heuristic)[/dim]")
                     if classification_result.evidence:
                         console.print(f"[dim]Evidence: {', '.join(classification_result.evidence[:3])}[/dim]")
                     
                     progress.update(task, description="[green]✓ Meeting type detected")
-                elif classify == "llm":
-                    console.print("[yellow]LLM classification not yet implemented, falling back to heuristic[/yellow]")
-                    transcript_text = " ".join(s["text"] for s in segments)
-                    classifier = HeuristicClassifier()
-                    classification_result = classifier.detect_meeting_type(transcript_text, segments)
-                    detected_type = classification_result.detected_type
-                    progress.update(task, description="[green]✓ Meeting type detected (heuristic fallback)")
         elif meeting_type != "auto":
             # Use explicit meeting type
             try:
