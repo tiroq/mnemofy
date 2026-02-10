@@ -141,6 +141,21 @@ def transcribe(
         "--no-interactive",
         help="Skip interactive prompts (auto-accept detected meeting type)",
     ),
+    normalize: bool = typer.Option(
+        False,
+        "--normalize",
+        help="Apply deterministic transcript normalization (stutter reduction, sentence stitching)",
+    ),
+    repair: bool = typer.Option(
+        False,
+        "--repair",
+        help="Use LLM to repair ASR errors (requires LLM engine, outputs change log)",
+    ),
+    remove_fillers: bool = typer.Option(
+        False,
+        "--remove-fillers",
+        help="Remove filler words (um, uh, like) during normalization (use with --normalize)",
+    ),
 ) -> None:
     """
     Transcribe audio/video file and generate structured meeting notes.
@@ -273,6 +288,49 @@ def transcribe(
             transcription = transcriber.transcribe(audio_file, language=lang)
             segments = transcriber.get_segments(transcription)
             
+            # Step 3.5: Normalize or repair transcript (if enabled)
+            transcript_changes = []
+            
+            if normalize or repair:
+                # Validate repair requirements
+                if repair and not llm_engine_instance:
+                    console.print("[yellow]Warning:[/yellow] --repair requires LLM engine, skipping repair")
+                    repair = False
+                
+                # Apply normalization
+                if normalize:
+                    progress.update(task, description="Normalizing transcript...")
+                    from mnemofy.transcriber import NormalizationResult
+                    
+                    norm_result = transcriber.normalize_transcript(
+                        transcription,
+                        remove_fillers=remove_fillers,
+                        normalize_numbers=True,
+                    )
+                    transcription = norm_result.transcription
+                    transcript_changes.extend(norm_result.changes)
+                    segments = transcriber.get_segments(transcription)
+                    
+                    console.print(f"[dim]Applied {len(norm_result.changes)} normalization changes[/dim]")
+                
+                # Apply LLM-based repair
+                if repair and llm_engine_instance:
+                    progress.update(task, description="Repairing transcript with LLM...")
+                    try:
+                        import asyncio
+                        
+                        repair_result = asyncio.run(
+                            transcriber.repair_transcript(transcription, llm_engine_instance)
+                        )
+                        transcription = repair_result.transcription
+                        transcript_changes.extend(repair_result.changes)
+                        segments = transcriber.get_segments(transcription)
+                        
+                        console.print(f"[dim]Applied {len(repair_result.changes)} LLM repairs[/dim]")
+                    except Exception as e:
+                        console.print(f"[yellow]Warning:[/yellow] Transcript repair failed: {e}")
+                        console.print("[dim]Continuing with normalized transcript[/dim]")
+            
             # Determine effective language: prefer explicit --lang, then detected, then fallback
             detected_language = transcription.get("language") if transcription else None
             effective_language = lang or detected_language or "en"
@@ -298,6 +356,13 @@ def transcribe(
             txt_path.write_text(txt_output, encoding="utf-8")
             srt_path.write_text(srt_output, encoding="utf-8")
             json_path.write_text(json_output, encoding="utf-8")
+            
+            # Write changes log if normalization or repair was performed
+            if transcript_changes:
+                changes_log_path = manager.get_changes_log_path()
+                changes_output = _format_changes_log(transcript_changes)
+                changes_log_path.write_text(changes_output, encoding="utf-8")
+                console.print(f"[dim]Changes log: {changes_log_path}[/dim]")
 
             progress.update(task, description="[green]✓ Transcripts generated")
 
@@ -564,6 +629,85 @@ def version() -> None:
     from mnemofy import __version__
 
     console.print(f"mnemofy version {__version__}")
+
+
+def _format_changes_log(changes: list) -> str:
+    """Format transcript changes into markdown log.
+    
+    Args:
+        changes: List of TranscriptChange objects
+    
+    Returns:
+        Markdown-formatted changes log
+    """
+    from mnemofy.transcriber import TranscriptChange
+    
+    output_lines = [
+        "# Transcript Changes Log",
+        "",
+        "This document logs all modifications made to the transcript during normalization and/or repair.",
+        "",
+    ]
+    
+    # Group changes by type
+    normalization_changes = [c for c in changes if c.change_type == "normalization"]
+    repair_changes = [c for c in changes if c.change_type == "repair"]
+    
+    # Summary
+    output_lines.append("## Summary")
+    output_lines.append("")
+    output_lines.append(f"- **Total Changes**: {len(changes)}")
+    output_lines.append(f"- **Normalization Changes**: {len(normalization_changes)}")
+    output_lines.append(f"- **Repair Changes**: {len(repair_changes)}")
+    output_lines.append("")
+    
+    # Normalization changes
+    if normalization_changes:
+        output_lines.append("## Normalization Changes")
+        output_lines.append("")
+        output_lines.append("Deterministic changes applied during transcript normalization:")
+        output_lines.append("")
+        
+        for change in normalization_changes:
+            output_lines.append(f"### Change #{change.segment_id} @ {change.timestamp}")
+            output_lines.append("")
+            output_lines.append(f"**Reason**: {change.reason}")
+            output_lines.append("")
+            output_lines.append("**Before**:")
+            output_lines.append(f"```")
+            output_lines.append(change.before)
+            output_lines.append(f"```")
+            output_lines.append("")
+            output_lines.append("**After**:")
+            output_lines.append(f"```")
+            output_lines.append(change.after)
+            output_lines.append(f"```")
+            output_lines.append("")
+    
+    # Repair changes
+    if repair_changes:
+        output_lines.append("## LLM Repair Changes")
+        output_lines.append("")
+        output_lines.append("ASR error corrections applied by LLM:")
+        output_lines.append("")
+        
+        for change in repair_changes:
+            output_lines.append(f"### Repair #{change.segment_id} @ {change.timestamp}")
+            output_lines.append("")
+            output_lines.append(f"**Reason**: {change.reason}")
+            output_lines.append("")
+            output_lines.append("**Before**:")
+            output_lines.append(f"```")
+            output_lines.append(change.before)
+            output_lines.append(f"```")
+            output_lines.append("")
+            output_lines.append("**After**:")
+            output_lines.append(f"```")
+            output_lines.append(change.after)
+            output_lines.append(f"```")
+            output_lines.append("")
+    
+    return "\n".join(output_lines)
 
 
 def main() -> None:
