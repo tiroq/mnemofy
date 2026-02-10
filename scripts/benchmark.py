@@ -126,15 +126,29 @@ def benchmark_normalization():
     """Benchmark transcript normalization."""
     from mnemofy.transcriber import Transcriber
     
-    # Create sample transcription with typical issues
-    sample_text = (
-        "So um, I think we should like, you know, uh, probably consider the the the "
-        "database migration. Um, we could you know use PostgreSQL right? And uh, "
-        "like we need to to to think about the, um, performance implications. "
-        "We discussed in the the meeting. You know, it's it's gonna be tough. "
-    ) * 10  # Repeat to simulate typical transcript length
+    # Create sample transcription with typical issues (segments format)
+    sample_segments = []
+    segment_texts = [
+        "So um, I think we should like, you know, uh, probably consider the the the database migration.",
+        "Um, we could you know use PostgreSQL right?",
+        "And uh, like we need to to to think about the, um, performance implications.",
+        "We discussed in the the meeting.",
+        "You know, it's it's gonna be tough.",
+    ] * 2  # Repeat for realistic length
     
-    transcription = {"text": sample_text, "segments": []}
+    for i, text in enumerate(segment_texts):
+        sample_segments.append({
+            "id": i,
+            "start": i * 5.0,
+            "end": (i + 1) * 5.0,
+            "text": text
+        })
+    
+    transcription = {
+        "text": " ".join(segment_texts),
+        "segments": sample_segments
+    }
+    
     transcriber = Transcriber(model_name="base")
     
     # Warmup
@@ -144,8 +158,14 @@ def benchmark_normalization():
     times = []
     change_counts = []
     for _ in range(10):
+        # Re-create transcription for each run (to avoid already-normalized data)
+        test_transcription = {
+            "text": transcription["text"],
+            "segments": [seg.copy() for seg in sample_segments]
+        }
+        
         start = time.time()
-        result = transcriber.normalize_transcript(transcription, remove_fillers=True)
+        result = transcriber.normalize_transcript(test_transcription, remove_fillers=True)
         duration = time.time() - start
         times.append(duration * 1000)  # Convert to ms
         change_counts.append(len(result.changes))
@@ -154,17 +174,19 @@ def benchmark_normalization():
     max_time = max(times)
     min_time = min(times)
     avg_changes = sum(change_counts) / len(change_counts)
+    total_chars = len(transcription["text"])
     
     print("\n" + "="*60)
     print("BENCHMARK: Transcript Normalization")
     print("="*60)
-    print(f"Input length: {len(sample_text)} chars")
+    print(f"Input: {len(sample_segments)} segments, {total_chars} chars")
     print(f"Samples: {len(times)}")
     print(f"Average: {avg_time:.1f}ms")
     print(f"Min: {min_time:.1f}ms")
     print(f"Max: {max_time:.1f}ms")
     print(f"Avg changes: {avg_changes:.0f}")
-    print(f"Throughput: {len(sample_text) / (avg_time/1000):.0f} chars/sec")
+    if avg_time > 0:
+        print(f"Throughput: {total_chars / (avg_time/1000):.0f} chars/sec")
     
     return True
 
