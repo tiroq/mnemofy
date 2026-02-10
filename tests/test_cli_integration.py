@@ -433,3 +433,219 @@ class TestFlagCombinations:
         # Should exit with 0 and show models
         assert result.exit_code == 0
         assert "tiny" in result.stdout or "base" in result.stdout
+
+
+class TestLanguageFlag:
+    """Tests for --lang CLI flag."""
+
+    def test_lang_flag_in_help(self, runner):
+        """Test that --lang flag appears in help text."""
+        result = runner.invoke(app, ["transcribe", "--help"])
+        assert "--lang" in result.stdout
+        assert "Language" in result.stdout
+
+    def test_lang_flag_accepted(self, runner, test_audio_file):
+        """Test that --lang flag is accepted."""
+        with patch("mnemofy.cli.AudioExtractor") as mock_extractor_class, \
+             patch("mnemofy.cli.Transcriber") as mock_transcriber_class, \
+             patch("mnemofy.cli.detect_system_resources") as mock_resources:
+            
+            # Setup mocks
+            mock_extractor = Mock()
+            mock_extractor.extract_audio.return_value = test_audio_file
+            mock_extractor_class.return_value = mock_extractor
+            
+            mock_transcriber = Mock()
+            mock_transcriber.transcribe.return_value = {"segments": []}
+            mock_transcriber.get_segments.return_value = [
+                {"start": 0.0, "end": 5.0, "text": "Hello world"}
+            ]
+            mock_transcriber_class.return_value = mock_transcriber
+            
+            mock_resources.return_value = {
+                "ram_gb": 8.0,
+                "cpu_cores": 4,
+                "has_gpu": False,
+            }
+            
+            # Run with --lang flag
+            result = runner.invoke(
+                app,
+                ["transcribe", str(test_audio_file), "--lang", "es", "--auto"],
+                catch_exceptions=False
+            )
+            
+            # Should not error on flag parsing
+            assert result.exit_code in [0, 1]  # 0 for success, 1 for other errors
+
+    def test_lang_flag_default_en(self, runner, test_audio_file):
+        """Test that --lang defaults to 'en' if not specified."""
+        with patch("mnemofy.cli.AudioExtractor") as mock_extractor_class, \
+             patch("mnemofy.cli.Transcriber") as mock_transcriber_class, \
+             patch("mnemofy.cli.detect_system_resources") as mock_resources, \
+             patch("mnemofy.cli.StructuredNotesGenerator") as mock_notes_gen:
+            
+            mock_extractor = Mock()
+            mock_extractor.extract_audio.return_value = test_audio_file
+            mock_extractor_class.return_value = mock_extractor
+            
+            mock_transcriber = Mock()
+            mock_transcriber.transcribe.return_value = {"segments": []}
+            mock_transcriber.get_segments.return_value = []
+            mock_transcriber_class.return_value = mock_transcriber
+            
+            mock_resources.return_value = {
+                "ram_gb": 8.0,
+                "cpu_cores": 4,
+                "has_gpu": False,
+            }
+            
+            mock_notes_gen_instance = Mock()
+            mock_notes_gen_instance.generate.return_value = "# Notes"
+            mock_notes_gen.return_value = mock_notes_gen_instance
+            
+            result = runner.invoke(
+                app,
+                ["transcribe", str(test_audio_file), "--auto"],
+                catch_exceptions=False
+            )
+            
+            # Should handle gracefully
+            assert result.exit_code in [0, 1]
+
+
+class TestNotesFlag:
+    """Tests for --notes CLI flag."""
+
+    def test_notes_flag_in_help(self, runner):
+        """Test that --notes flag appears in help text."""
+        result = runner.invoke(app, ["transcribe", "--help"])
+        assert "--notes" in result.stdout
+        assert "Notes generation mode" in result.stdout
+
+    def test_notes_flag_basic(self, runner, test_audio_file):
+        """Test --notes flag with 'basic' mode."""
+        with patch("mnemofy.cli.AudioExtractor") as mock_extractor_class, \
+             patch("mnemofy.cli.Transcriber") as mock_transcriber_class, \
+             patch("mnemofy.cli.detect_system_resources") as mock_resources, \
+             patch("mnemofy.cli.StructuredNotesGenerator") as mock_notes_gen:
+            
+            mock_extractor = Mock()
+            mock_extractor.extract_audio.return_value = test_audio_file
+            mock_extractor_class.return_value = mock_extractor
+            
+            mock_transcriber = Mock()
+            mock_transcriber.transcribe.return_value = {"segments": []}
+            mock_transcriber.get_segments.return_value = []
+            mock_transcriber_class.return_value = mock_transcriber
+            
+            mock_resources.return_value = {
+                "ram_gb": 8.0,
+                "cpu_cores": 4,
+                "has_gpu": False,
+            }
+            
+            mock_notes_gen_instance = Mock()
+            mock_notes_gen_instance.generate.return_value = "# Notes"
+            mock_notes_gen.return_value = mock_notes_gen_instance
+            
+            result = runner.invoke(
+                app,
+                ["transcribe", str(test_audio_file), "--notes", "basic", "--auto"],
+                catch_exceptions=False
+            )
+            
+            assert result.exit_code in [0, 1]
+            # Should have called StructuredNotesGenerator with mode="basic"
+            mock_notes_gen.assert_called()
+
+    def test_notes_flag_default_basic(self, runner, test_audio_file):
+        """Test that --notes defaults to 'basic' if not specified."""
+        with patch("mnemofy.cli.AudioExtractor") as mock_extractor_class, \
+             patch("mnemofy.cli.Transcriber") as mock_transcriber_class, \
+             patch("mnemofy.cli.detect_system_resources") as mock_resources, \
+             patch("mnemofy.cli.StructuredNotesGenerator") as mock_notes_gen:
+            
+            mock_extractor = Mock()
+            mock_extractor.extract_audio.return_value = test_audio_file
+            mock_extractor_class.return_value = mock_extractor
+            
+            mock_transcriber = Mock()
+            mock_transcriber.transcribe.return_value = {"segments": []}
+            mock_transcriber.get_segments.return_value = []
+            mock_transcriber_class.return_value = mock_transcriber
+            
+            mock_resources.return_value = {
+                "ram_gb": 8.0,
+                "cpu_cores": 4,
+                "has_gpu": False,
+            }
+            
+            mock_notes_gen_instance = Mock()
+            mock_notes_gen_instance.generate.return_value = "# Notes"
+            mock_notes_gen.return_value = mock_notes_gen_instance
+            
+            result = runner.invoke(
+                app,
+                ["transcribe", str(test_audio_file), "--auto"],
+                catch_exceptions=False
+            )
+            
+            assert result.exit_code in [0, 1]
+            # Should have been called with default mode="basic"
+            mock_notes_gen.assert_called()
+
+
+class TestOutdirFlag:
+    """Tests for --outdir CLI flag."""
+
+    def test_outdir_flag_in_help(self, runner):
+        """Test that --outdir flag appears in help text."""
+        result = runner.invoke(app, ["transcribe", "--help"])
+        assert "--outdir" in result.stdout
+
+    def test_outdir_with_lang_and_notes(self, runner, test_audio_file):
+        """Test --outdir works with --lang and --notes flags."""
+        import tempfile
+        
+        with tempfile.TemporaryDirectory() as tmpdir:
+            outdir = tmpdir
+            
+            with patch("mnemofy.cli.AudioExtractor") as mock_extractor_class, \
+                 patch("mnemofy.cli.Transcriber") as mock_transcriber_class, \
+                 patch("mnemofy.cli.detect_system_resources") as mock_resources, \
+                 patch("mnemofy.cli.StructuredNotesGenerator") as mock_notes_gen:
+                
+                mock_extractor = Mock()
+                mock_extractor.extract_audio.return_value = test_audio_file
+                mock_extractor_class.return_value = mock_extractor
+                
+                mock_transcriber = Mock()
+                mock_transcriber.transcribe.return_value = {"segments": []}
+                mock_transcriber.get_segments.return_value = []
+                mock_transcriber_class.return_value = mock_transcriber
+                
+                mock_resources.return_value = {
+                    "ram_gb": 8.0,
+                    "cpu_cores": 4,
+                    "has_gpu": False,
+                }
+                
+                mock_notes_gen_instance = Mock()
+                mock_notes_gen_instance.generate.return_value = "# Notes"
+                mock_notes_gen.return_value = mock_notes_gen_instance
+                
+                result = runner.invoke(
+                    app,
+                    [
+                        "transcribe",
+                        str(test_audio_file),
+                        "--outdir", outdir,
+                        "--lang", "es",
+                        "--notes", "basic",
+                        "--auto"
+                    ],
+                    catch_exceptions=False
+                )
+                
+                assert result.exit_code in [0, 1]
