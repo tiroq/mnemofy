@@ -1,31 +1,25 @@
-# Implementation Plan: [FEATURE]
+# Implementation Plan: Meeting Type Detection & Pluggable LLM Engines
 
-**Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
-**Input**: Feature specification from `/specs/[###-feature-name]/spec.md`
+**Branch**: `003-meeting-type-llm` | **Date**: 2026-02-10 | **Spec**: [spec.md](./spec.md)
+**Input**: Feature specification from `/specs/003-meeting-type-llm/spec.md`
 
 **Note**: This template is filled in by the `/speckit.plan` command. See `.specify/templates/commands/plan.md` for the execution workflow.
 
 ## Summary
 
-[Extract from feature spec: primary requirement + technical approach from research]
+Automatically detect meeting types (status, planning, design, demo, talk, incident, discovery, oneonone, brainstorm) from transcripts and generate template-based, structured notes. Support pluggable LLM backends (OpenAI-compatible APIs, Ollama) for enhanced classification and notes extraction, with safe-by-default execution ensuring the tool remains fully functional offline using deterministic heuristics. All LLM-generated content must be grounded in transcript evidence with timestamp references.
 
 ## Technical Context
 
-<!--
-  ACTION REQUIRED: Replace the content in this section with the technical details
-  for the project. The structure here is presented in advisory capacity to guide
-  the iteration process.
--->
-
-**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]  
-**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]  
-**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]  
-**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]  
-**Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
-**Project Type**: [single/web/mobile - determines source structure]  
-**Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]  
-**Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]  
-**Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
+**Language/Version**: Python 3.10+  
+**Primary Dependencies**: Jinja2 (templating), requests/httpx (LLM HTTP clients), existing mnemofy dependencies (Whisper models)  
+**Storage**: File-based (transcripts, notes, templates, config TOML)  
+**Testing**: pytest with contract tests for LLM interfaces, integration tests for classification pipeline  
+**Target Platform**: macOS/Linux/Windows CLI (cross-platform)  
+**Project Type**: Single Python project (extending existing mnemofy codebase)  
+**Performance Goals**: Complete meeting type detection + notes generation within 2× transcript duration (30min meeting → ≤60min processing)  
+**Constraints**: Offline-capable (heuristic mode required), <200ms interactive menu latency, graceful LLM fallback within 30s  
+**Scale/Scope**: 9 meeting types, ~200 heuristic keywords, support for 2-hour transcripts, 9 Jinja2 templates
 
 ## Constitution Check
 
