@@ -291,3 +291,160 @@ MEETING_TYPE_KEYWORDS: Dict[MeetingType, Dict[str, float]] = {
         "building on": 1.5,
     },
 }
+
+
+class HeuristicClassifier:
+    """Deterministic meeting type classifier using weighted keyword TF-IDF.
+    
+    Analyzes transcript text to detect meeting type using keyword frequency,
+    structural features (question density, timeline vocabulary), and confidence scoring.
+    
+    Operates completely offline without any external dependencies or API calls.
+    """
+    
+    def __init__(self, keywords: Optional[Dict[MeetingType, Dict[str, float]]] = None):
+        """Initialize heuristic classifier.
+        
+        Args:
+            keywords: Optional custom keyword dictionary. If None, uses MEETING_TYPE_KEYWORDS.
+        """
+        self.keywords = keywords or MEETING_TYPE_KEYWORDS
+    
+    def detect_meeting_type(
+        self,
+        transcript_text: str,
+        segments: Optional[List[Dict[str, Any]]] = None
+    ) -> ClassificationResult:
+        """Detect meeting type from transcript using heuristic approach.
+        
+        Args:
+            transcript_text: Full transcript text (all segments combined)
+            segments: Optional list of transcript segments with timing info
+        
+        Returns:
+            ClassificationResult with detected type, confidence, evidence, and alternatives
+        
+        Examples:
+            >>> classifier = HeuristicClassifier()
+            >>> result = classifier.detect_meeting_type("status update blockers sprint")
+            >>> result.detected_type
+            MeetingType.STATUS
+            >>> result.confidence > 0.6
+            True
+        """
+        # Normalize text for matching
+        text_lower = transcript_text.lower()
+        
+        # Calculate TF-IDF-like scores for each meeting type
+        scores: Dict[MeetingType, float] = {}
+        evidence_by_type: Dict[MeetingType, List[str]] = {}
+        
+        for meeting_type, keywords_dict in self.keywords.items():
+            type_score = 0.0
+            found_keywords = []
+            
+            for keyword, weight in keywords_dict.items():
+                keyword_lower = keyword.lower()
+                # Count occurrences
+                count = text_lower.count(keyword_lower)
+                if count > 0:
+                    # TF-IDF style: weight * log(1 + count) to avoid over-weighting repetition
+                    import math
+                    contribution = weight * math.log(1 + count)
+                    type_score += contribution
+                    found_keywords.append(f"{keyword} ({count}x)")
+            
+            scores[meeting_type] = type_score
+            evidence_by_type[meeting_type] = found_keywords
+        
+        # Add structural features
+        if segments:
+            scores = self._add_structural_features(scores, segments, text_lower)
+        
+        # Sort by score (highest first)
+        sorted_types = sorted(scores.items(), key=lambda x: x[1], reverse=True)
+        
+        if not sorted_types or sorted_types[0][1] == 0:
+            # No keywords matched - default to TALK with low confidence
+            return ClassificationResult(
+                detected_type=MeetingType.TALK,
+                confidence=0.0,
+                evidence=["No strong indicators found"],
+                secondary_types=[(mt, 0.0) for mt, _ in sorted_types[:5]],
+                engine="heuristic",
+            )
+        
+        # Top result
+        top_type, top_score = sorted_types[0]
+        
+        # Calculate confidence based on margin from second place
+        if len(sorted_types) > 1:
+            second_score = sorted_types[1][1]
+            margin = (top_score - second_score) / top_score if top_score > 0 else 0
+            # Confidence: normalize to 0-1 range, boosted by margin
+            raw_confidence = min(top_score / 20.0, 1.0)  # Normalize by expected max score
+            confidence = raw_confidence * (0.5 + 0.5 * margin)  # Boost by margin
+        else:
+            confidence = min(top_score / 20.0, 1.0)
+        
+        # Secondary types (top 5 alternatives)
+        secondary_types = [
+            (mt, min(score / 20.0, 1.0))
+            for mt, score in sorted_types[1:6]
+        ]
+        
+        return ClassificationResult(
+            detected_type=top_type,
+            confidence=confidence,
+            evidence=evidence_by_type[top_type][:5],  # Top 5 evidence phrases
+            secondary_types=secondary_types,
+            engine="heuristic",
+        )
+    
+    def _add_structural_features(
+        self,
+        scores: Dict[MeetingType, float],
+        segments: List[Dict[str, Any]],
+        text_lower: str
+    ) -> Dict[MeetingType, float]:
+        """Add structural feature bonuses to scores.
+        
+        Structural features:
+        - Question density (high questions → STATUS, DISCOVERY, BRAINSTORM)
+        - Timeline vocabulary (yesterday/today/tomorrow → STATUS, PLANNING)
+        - Action/commitment markers (will/should/must → PLANNING, INCIDENT)
+        
+        Args:
+            scores: Current meeting type scores
+            segments: Transcript segments with timing
+            text_lower: Lowercased transcript text
+        
+        Returns:
+            Updated scores dictionary with structural bonuses
+        """
+        # Question density (percentage of sentences ending in ?)
+        sentences = text_lower.split('.')
+        questions = [s for s in sentences if '?' in s]
+        question_density = len(questions) / len(sentences) if sentences else 0
+        
+        if question_density > 0.3:  # High question density
+            scores[MeetingType.DISCOVERY] += 2.0
+            scores[MeetingType.BRAINSTORM] += 1.5
+            scores[MeetingType.STATUS] += 1.0
+        
+        # Timeline vocabulary density
+        timeline_words = ['yesterday', 'today', 'tomorrow', 'last week', 'next week', 'this week']
+        timeline_count = sum(text_lower.count(word) for word in timeline_words)
+        if timeline_count > 3:
+            scores[MeetingType.STATUS] += 2.0
+            scores[MeetingType.PLANNING] += 1.5
+        
+        # Commitment/action markers
+        action_markers = ['will', 'should', 'must', 'need to', 'have to']
+        action_count = sum(text_lower.count(marker) for marker in action_markers)
+        if action_count > 5:
+            scores[MeetingType.PLANNING] += 1.5
+            scores[MeetingType.INCIDENT] += 1.0
+        
+        return scores
+
