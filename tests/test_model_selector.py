@@ -705,10 +705,12 @@ class TestGetModelTable:
         )
         table = get_model_table(resources, use_gpu=True)
         
-        # Should still produce valid table with N/A for VRAM
+        # Should still produce valid table with model specifications
         assert isinstance(table, str)
-        assert "metal" in table.lower() or "N/A" in table
         assert len(table) > 0
+        # Should have models and VRAM column (even if it's 1.0 GB for each)
+        assert "tiny" in table
+        assert "GB" in table
 
     def test_get_model_table_no_recommended_model(self):
         """Test table works without recommended parameter."""
