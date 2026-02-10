@@ -71,26 +71,26 @@
 
 #### Basic Notes Generation
 
-- [ ] T025 [US1] Implement basic notes extractor in src/mnemofy/notes.py (BasicNotesExtractor class with time-bucketed summaries)
-- [ ] T026 [US1] Implement keyword frequency extraction in src/mnemofy/notes.py (identify frequent terms per time window)
-- [ ] T027 [US1] Implement timestamp reference extraction in src/mnemofy/notes.py (create TranscriptReference objects from segments)
-- [ ] T028 [US1] Implement decision marker detection in src/mnemofy/notes.py (regex patterns for "agreed", "decided", "will do")
-- [ ] T029 [US1] Implement action item extraction in src/mnemofy/notes.py (detect commitments with simple rules)
-- [ ] T030 [US1] Implement template rendering pipeline in src/mnemofy/notes.py (load template, populate data, render to Markdown)
+- [X] T025 [US1] Implement basic notes extractor in src/mnemofy/notes.py (BasicNotesExtractor class with time-bucketed summaries)
+- [X] T026 [US1] Implement keyword frequency extraction in src/mnemofy/notes.py (identify frequent terms per time window)
+- [X] T027 [US1] Implement timestamp reference extraction in src/mnemofy/notes.py (create TranscriptReference objects from segments)
+- [X] T028 [US1] Implement decision marker detection in src/mnemofy/notes.py (regex patterns for "agreed", "decided", "will do")
+- [X] T029 [US1] Implement action item extraction in src/mnemofy/notes.py (detect commitments with simple rules)
+- [X] T030 [US1] Implement template rendering pipeline in src/mnemofy/notes.py (load template, populate data, render to Markdown)
 
 #### CLI Integration
 
-- [ ] T031 [US1] Add --meeting-type flag to src/mnemofy/cli.py (auto|status|planning|design|demo|talk|incident|discovery|oneonone|brainstorm)
-- [ ] T032 [P] [US1] Add --template flag to src/mnemofy/cli.py (custom template filename)
-- [ ] T033 [P] [US1] Add --classify flag to src/mnemofy/cli.py (heuristic|llm|off)
-- [ ] T034 [US1] Integrate classification into main CLI workflow in src/mnemofy/cli.py (call detector after transcription)
-- [ ] T035 [US1] Implement confidence threshold logic in src/mnemofy/cli.py (≥0.6 auto-accept, 0.5-0.6 warn, <0.5 defer to interactive)
+- [X] T031 [US1] Add --meeting-type flag to src/mnemofy/cli.py (auto|status|planning|design|demo|talk|incident|discovery|oneonone|brainstorm)
+- [X] T032 [P] [US1] Add --template flag to src/mnemofy/cli.py (custom template filename)
+- [X] T033 [P] [US1] Add --classify flag to src/mnemofy/cli.py (heuristic|llm|off)
+- [X] T034 [US1] Integrate classification into main CLI workflow in src/mnemofy/cli.py (call detector after transcription)
+- [X] T035 [US1] Implement confidence threshold logic in src/mnemofy/cli.py (≥0.6 auto-accept, 0.5-0.6 warn, <0.5 defer to interactive)
 
 #### Output Management
 
-- [ ] T036 [US1] Add meeting-type.json output in src/mnemofy/output_manager.py (save ClassificationResult as JSON)
-- [ ] T037 [US1] Modify notes.md output in src/mnemofy/output_manager.py (use detected template instead of generic)
-- [ ] T038 [US1] Add detection info to console output in src/mnemofy/cli.py (display type, confidence, evidence before generating notes)
+- [X] T036 [US1] Add meeting-type.json output in src/mnemofy/output_manager.py (save ClassificationResult as JSON)
+- [X] T037 [US1] Modify notes.md output in src/mnemofy/output_manager.py (use detected template instead of generic)
+- [X] T038 [US1] Add detection info to console output in src/mnemofy/cli.py (display type, confidence, evidence before generating notes)
 
 #### Testing for User Story 1
 
