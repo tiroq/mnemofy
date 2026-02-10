@@ -912,6 +912,10 @@ def transcribe(
                 pass  # Ignore cleanup errors
 
         console.print("\n[bold green]✓ Success![/bold green]")
+        
+        if model_suffix:
+            console.print(f"[cyan]ℹ Model-suffixed filenames enabled ({selected_model})[/cyan]")
+        
         console.print(f"[dim]Output files generated:[/dim]")
         console.print(f"  Transcript (TXT): {txt_path}")
         console.print(f"  Subtitle (SRT): {srt_path}")
@@ -923,6 +927,7 @@ def transcribe(
         console.print(f"[dim]Metadata:[/dim]")
         console.print(f"  Processing Info: {metadata_path}")
         console.print(f"  Artifacts Index: {manifest_path}")
+        console.print(f"  Run History: {history_path}")
 
         # Show stats
         console.print("\n[bold]Statistics:[/bold]")
