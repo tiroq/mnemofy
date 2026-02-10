@@ -156,6 +156,12 @@ def transcribe(
         "--remove-fillers",
         help="Remove filler words (um, uh, like) during normalization (use with --normalize)",
     ),
+    verbose: bool = typer.Option(
+        False,
+        "--verbose",
+        "-v",
+        help="Enable verbose logging (shows LLM request details, timing, detection info)",
+    ),
 ) -> None:
     """
     Transcribe audio/video file and generate structured meeting notes.
@@ -174,6 +180,16 @@ def transcribe(
     - Fallback: Uses 'base' model if detection fails
     """
     import logging
+    import time
+    
+    # Configure logging based on verbose flag
+    log_level = logging.DEBUG if verbose else logging.WARNING
+    logging.basicConfig(
+        level=log_level,
+        format='[%(levelname)s] %(message)s',
+        force=True
+    )
+    logger = logging.getLogger(__name__)
     
     # Handle --list-models flag (exit early)
     if list_models_flag:
@@ -201,15 +217,22 @@ def transcribe(
     if model is not None:
         selected_model = model
         console.print(f"[dim]Using explicit model: {selected_model}[/dim]")
+        logger.debug(f"Model selection: explicit override '{selected_model}'")
     else:
         # Step 2: Detect system resources for auto-selection
         try:
             resources = detect_system_resources()
             use_gpu = not no_gpu
             
+            logger.debug(f"System resources detected: RAM={resources.available_ram_gb:.1f}GB, "
+                        f"GPU={'available' if resources.has_gpu else 'not available'}")
+            
             # Step 3: Determine if interactive menu should be shown
             interactive_available = is_interactive_environment()
             should_show_menu = interactive_available and not auto
+            
+            logger.debug(f"Interactive mode: available={interactive_available}, "
+                        f"auto_mode={auto}, will_show_menu={should_show_menu}")
             
             if should_show_menu:
                 # Interactive mode: show menu for user selection
@@ -218,11 +241,19 @@ def transcribe(
                 compatible = filter_compatible_models(resources, use_gpu=use_gpu)
                 recommended, reasoning = recommend_model(resources, use_gpu=use_gpu)
                 
+                logger.debug(f"Compatible models: {[m.name for m in compatible]}, "
+                           f"recommended: {recommended.name}")
+                
                 console.print(f"\n[bold]System Resources:[/bold] {reasoning}")
                 console.print("[bold]Select a model:[/bold]")
                 
                 menu = ModelMenu(compatible, recommended=recommended, resources=resources)
+                
+                menu_start = time.time()
                 selected_spec = menu.show()
+                menu_duration = time.time() - menu_start
+                
+                logger.debug(f"Model menu interaction took {menu_duration*1000:.0f}ms")
                 
                 if selected_spec is None:
                     console.print("[yellow]Model selection cancelled[/yellow]")
@@ -236,6 +267,7 @@ def transcribe(
                 selected_model = recommended.name
                 mode = "auto-selected"
                 console.print(f"[dim]{mode.capitalize()}: {recommended.name} ({reasoning})[/dim]")
+                logger.debug(f"Auto-selected model: {selected_model} ({reasoning})")
                 
         except ModelSelectionError as e:
             # No compatible models found - this is a critical error
@@ -292,6 +324,8 @@ def transcribe(
             transcript_changes = []
             
             if normalize or repair:
+                logger.debug(f"Transcript preprocessing enabled: normalize={normalize}, repair={repair}")
+                
                 # Validate repair requirements
                 if repair and not llm_engine_instance:
                     console.print("[yellow]Warning:[/yellow] --repair requires LLM engine, skipping repair")
@@ -302,16 +336,20 @@ def transcribe(
                     progress.update(task, description="Normalizing transcript...")
                     from mnemofy.transcriber import NormalizationResult
                     
+                    norm_start = time.time()
                     norm_result = transcriber.normalize_transcript(
                         transcription,
                         remove_fillers=remove_fillers,
                         normalize_numbers=True,
                     )
+                    norm_duration = time.time() - norm_start
+                    
                     transcription = norm_result.transcription
                     transcript_changes.extend(norm_result.changes)
                     segments = transcriber.get_segments(transcription)
                     
                     console.print(f"[dim]Applied {len(norm_result.changes)} normalization changes[/dim]")
+                    logger.debug(f"Normalization: {len(norm_result.changes)} changes in {norm_duration*1000:.0f}ms")
                 
                 # Apply LLM-based repair
                 if repair and llm_engine_instance:
@@ -319,17 +357,22 @@ def transcribe(
                     try:
                         import asyncio
                         
+                        repair_start = time.time()
                         repair_result = asyncio.run(
                             transcriber.repair_transcript(transcription, llm_engine_instance)
                         )
+                        repair_duration = time.time() - repair_start
+                        
                         transcription = repair_result.transcription
                         transcript_changes.extend(repair_result.changes)
                         segments = transcriber.get_segments(transcription)
                         
                         console.print(f"[dim]Applied {len(repair_result.changes)} LLM repairs[/dim]")
+                        logger.debug(f"LLM repair: {len(repair_result.changes)} changes in {repair_duration*1000:.0f}ms")
                     except Exception as e:
                         console.print(f"[yellow]Warning:[/yellow] Transcript repair failed: {e}")
                         console.print("[dim]Continuing with normalized transcript[/dim]")
+                        logger.debug(f"Repair failed: {e}")
             
             # Determine effective language: prefer explicit --lang, then detected, then fallback
             detected_language = transcription.get("language") if transcription else None
@@ -373,6 +416,7 @@ def transcribe(
         
         # Initialize LLM engine if LLM mode requested
         if classify == "llm" or notes == "llm":
+            logger.debug(f"LLM mode requested: classify={classify}, notes={notes}")
             try:
                 # Load configuration from file + env + CLI overrides
                 cli_overrides = {}
@@ -383,9 +427,15 @@ def transcribe(
                 if llm_base_url:
                     cli_overrides["base_url"] = llm_base_url
                 
+                logger.debug(f"Loading LLM config with CLI overrides: {cli_overrides}")
+                
                 llm_config = get_llm_config(cli_overrides=cli_overrides)
                 
+                logger.debug(f"Final LLM config: engine={llm_config.engine}, "
+                           f"model={llm_config.model}, timeout={llm_config.timeout}s")
+                
                 # Create LLM engine using merged config
+                llm_start = time.time()
                 llm_engine_instance = get_llm_engine(
                     engine_type=llm_config.engine,
                     model=llm_config.model,
@@ -393,16 +443,22 @@ def transcribe(
                     api_key=llm_config.api_key,
                     timeout=llm_config.timeout
                 )
+                llm_init_duration = time.time() - llm_start
                 
                 if llm_engine_instance:
                     console.print(f"[dim]LLM engine: {llm_engine_instance.get_model_name()}[/dim]")
+                    logger.debug(f"LLM engine initialized in {llm_init_duration*1000:.0f}ms: "
+                               f"{llm_engine_instance.get_model_name()}")
                 else:
                     console.print("[yellow]Warning:[/yellow] LLM engine unavailable, falling back to heuristic mode")
+                    logger.debug("LLM engine returned None, falling back to heuristic mode")
             except Exception as e:
                 console.print(f"[yellow]Warning:[/yellow] LLM initialization failed: {e}")
                 console.print("[dim]Falling back to heuristic mode[/dim]")
+                logger.debug(f"LLM initialization error: {e}")
         
         if classify != "off" and meeting_type == "auto":
+            logger.debug(f"Meeting type detection: mode={classify}, auto-detect=True")
             with Progress(
                 SpinnerColumn(),
                 TextColumn("[progress.description]{task.description}"),
@@ -415,6 +471,8 @@ def transcribe(
                     try:
                         transcript_text = " ".join(s["text"] for s in segments)
                         
+                        logger.debug(f"Transcript length for detection: {len(transcript_text)} chars")
+                        
                         # Extract high-signal segments (use config values if available)
                         llm_config_for_extract = get_llm_config()
                         high_signal = extract_high_signal_segments(
@@ -423,10 +481,15 @@ def transcribe(
                             max_segments=llm_config_for_extract.max_segments
                         )
                         
+                        logger.debug(f"Extracted {len(high_signal)} high-signal segments, "
+                                   f"total {sum(len(s) for s in high_signal)} chars")
+                        
+                        detect_start = time.time()
                         classification_result = llm_engine_instance.classify_meeting_type(
                             transcript_text,
                             high_signal_segments=high_signal
                         )
+                        detect_duration = time.time() - detect_start
                         detected_type = classification_result.detected_type
                         
                         # Display detection result
@@ -436,21 +499,37 @@ def transcribe(
                         if classification_result.evidence:
                             console.print(f"[dim]Evidence: {', '.join(classification_result.evidence[:3])}[/dim]")
                         
+                        logger.debug(f"LLM detection: type={detected_type.value}, "
+                                   f"confidence={confidence_pct:.1f}%, duration={detect_duration*1000:.0f}ms")
+                        
                         progress.update(task, description="[green]✓ Meeting type detected (LLM)")
                     except LLMError as e:
                         console.print(f"[yellow]Warning:[/yellow] LLM classification failed: {e}")
                         console.print("[dim]Falling back to heuristic mode[/dim]")
+                        logger.debug(f"LLM classification error: {e}, falling back to heuristic")
                         # Fallback to heuristic
                         transcript_text = " ".join(s["text"] for s in segments)
                         classifier = HeuristicClassifier()
+                        
+                        detect_start = time.time()
                         classification_result = classifier.detect_meeting_type(transcript_text, segments)
+                        detect_duration = time.time() - detect_start
                         detected_type = classification_result.detected_type
+                        
+                        logger.debug(f"Heuristic fallback: type={detected_type.value}, "
+                                   f"duration={detect_duration*1000:.0f}ms")
+                        
                         progress.update(task, description="[green]✓ Meeting type detected (heuristic fallback)")
                 else:
                     # Use heuristic classifier
                     transcript_text = " ".join(s["text"] for s in segments)
                     classifier = HeuristicClassifier()
+                    
+                    logger.debug(f"Using heuristic classifier on {len(transcript_text)} chars")
+                    
+                    detect_start = time.time()
                     classification_result = classifier.detect_meeting_type(transcript_text, segments)
+                    detect_duration = time.time() - detect_start
                     detected_type = classification_result.detected_type
                     
                     # Display detection result
@@ -459,6 +538,9 @@ def transcribe(
                     console.print(f"[dim]Confidence: {confidence_pct:.1f}% (Heuristic)[/dim]")
                     if classification_result.evidence:
                         console.print(f"[dim]Evidence: {', '.join(classification_result.evidence[:3])}[/dim]")
+                    
+                    logger.debug(f"Heuristic detection: type={detected_type.value}, "
+                               f"confidence={confidence_pct:.1f}%, duration={detect_duration*1000:.0f}ms")
                     
                     progress.update(task, description="[green]✓ Meeting type detected")
         elif meeting_type != "auto":
@@ -476,21 +558,32 @@ def transcribe(
             # Show interactive menu for user to confirm or override
             interactive_available = is_interactive_environment()
             
+            logger.debug(f"Interactive meeting type selection: available={interactive_available}, "
+                       f"detected={detected_type.value}, no_interactive={no_interactive}")
+            
             if interactive_available:
                 try:
                     # Let user confirm or override via menu
+                    menu_start = time.time()
                     selected_type = select_meeting_type(
                         classification_result,
                         auto_accept_threshold=0.6,
                         interactive=True
                     )
+                    menu_duration = time.time() - menu_start
+                    
+                    logger.debug(f"Meeting type menu interaction took {menu_duration*1000:.0f}ms")
                     
                     if selected_type != detected_type:
                         console.print(f"\n[cyan]User selected:[/cyan] {selected_type.value}")
+                        logger.debug(f"User overrode detected type: {detected_type.value} -> {selected_type.value}")
                         detected_type = selected_type
+                    else:
+                        logger.debug(f"User accepted detected type: {detected_type.value}")
                 except Exception as e:
                     console.print(f"[yellow]Warning:[/yellow] Interactive menu failed: {e}")
                     console.print(f"[dim]Continuing with detected type: {detected_type.value}[/dim]")
+                    logger.debug(f"Interactive menu error: {e}")
         
         # Step 5: Generate notes
         with Progress(
@@ -502,26 +595,44 @@ def transcribe(
 
             # Use meeting-type-aware notes generation if type detected
             if detected_type and not template:
+                logger.debug(f"Generating meeting-type-aware notes: type={detected_type.value}, "
+                           f"mode={notes}, template={template}")
+                
                 # Extract structured information (basic or LLM)
                 if notes == "llm" and llm_engine_instance:
                     try:
                         # Use LLM notes extraction
+                        notes_start = time.time()
                         extracted_items = llm_engine_instance.generate_notes(
                             transcript_segments=segments,
                             meeting_type=detected_type.value,
                             focus_areas=None
                         )
+                        notes_duration = time.time() - notes_start
+                        
                         console.print("[dim]Notes extracted using LLM[/dim]")
+                        logger.debug(f"LLM notes extraction: {len(extracted_items)} items in {notes_duration*1000:.0f}ms")
                     except LLMError as e:
                         console.print(f"[yellow]Warning:[/yellow] LLM notes extraction failed: {e}")
                         console.print("[dim]Falling back to basic extraction[/dim]")
+                        logger.debug(f"LLM notes extraction failed: {e}, falling back to basic")
                         # Fallback to basic extraction
                         extractor = BasicNotesExtractor()
+                        
+                        notes_start = time.time()
                         extracted_items = extractor.extract_all(segments, detected_type)
+                        notes_duration = time.time() - notes_start
+                        
+                        logger.debug(f"Basic extraction: {len(extracted_items)} items in {notes_duration*1000:.0f}ms")
                 else:
                     # Use basic heuristic extraction
                     extractor = BasicNotesExtractor()
+                    
+                    notes_start = time.time()
                     extracted_items = extractor.extract_all(segments, detected_type)
+                    notes_duration = time.time() - notes_start
+                    
+                    logger.debug(f"Basic extraction: {len(extracted_items)} items in {notes_duration*1000:.0f}ms")
                 
                 # Prepare metadata for template
                 template_metadata = {
