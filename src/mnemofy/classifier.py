@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional
+import re
 
 
 class MeetingType(str, Enum):
@@ -447,4 +448,96 @@ class HeuristicClassifier:
             scores[MeetingType.INCIDENT] += 1.0
         
         return scores
+
+
+def extract_high_signal_segments(
+    transcript_text: str,
+    context_words: int = 50,
+    max_segments: int = 10
+) -> List[str]:
+    """Extract high-signal segments from transcript for LLM context.
+    
+    Identifies decision markers and extracts context windows around them.
+    This reduces LLM token usage while preserving critical information.
+    
+    Args:
+        transcript_text: Full transcript text
+        context_words: Number of words before/after decision marker (default: 50)
+        max_segments: Maximum number of segments to return (default: 10)
+    
+    Returns:
+        List of text segments containing decision markers with context
+    
+    Examples:
+        >>> segments = extract_high_signal_segments(transcript, context_words=50)
+        >>> # Returns segments like:
+        >>> # "...so we decided to use PostgreSQL because it handles..."
+    """
+    # Decision markers that indicate high-value content
+    decision_markers = [
+        # Direct decisions
+        r'\bdecided?\b',
+        r'\bdecision\b',
+        r'\bwill (use|implement|build|create)\b',
+        r'\bgoing to\b',
+        r'\blet\'?s (use|go with|do)\b',
+        
+        # Commitments
+        r'\bcommit(ted)? to\b',
+        r'\bagree[ds]? (to|on|that)\b',
+        r'\bconfirmed?\b',
+        
+        # Actions
+        r'\baction item\b',
+        r'\bneed to\b',
+        r'\bmust\b',
+        r'\bshould\b',
+        r'\bwill\b',
+        
+        # Problems/blockers
+        r'\bblocker\b',
+        r'\bissue\b',
+        r'\bproblem\b',
+        r'\bbug\b',
+        r'\bincident\b',
+        r'\bfail(ed|ure)\b',
+        
+        # Outcomes
+        r'\bresolved?\b',
+        r'\bfixed?\b',
+        r'\bcompleted?\b',
+        r'\bfinished?\b',
+    ]
+    
+    # Compile regex pattern
+    pattern = '|'.join(f'({marker})' for marker in decision_markers)
+    regex = re.compile(pattern, re.IGNORECASE)
+    
+    # Split into words for context extraction
+    words = transcript_text.split()
+    segments = []
+    seen_positions = set()  # Track positions to avoid duplicates
+    
+    # Find all marker occurrences
+    for match in regex.finditer(transcript_text):
+        # Find word position of this match
+        position = len(transcript_text[:match.start()].split())
+        
+        # Skip if we've already extracted a segment near this position
+        if any(abs(position - seen) < context_words for seen in seen_positions):
+            continue
+        
+        # Extract context window
+        start_idx = max(0, position - context_words)
+        end_idx = min(len(words), position + context_words)
+        
+        segment = " ".join(words[start_idx:end_idx])
+        segments.append(segment)
+        seen_positions.add(position)
+        
+        # Stop if we have enough segments
+        if len(segments) >= max_segments:
+            break
+    
+    return segments
 
