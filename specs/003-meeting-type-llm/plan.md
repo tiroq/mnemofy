@@ -121,3 +121,77 @@ tests/
 > **Fill ONLY if Constitution Check has violations that must be justified**
 
 **No violations** - This section intentionally left empty. Feature passed all constitutional gates.
+
+---
+
+## Phase 0: Research ✅
+
+**Status**: Complete
+
+**Artifacts**:
+- [research.md](./research.md) - Technology decisions for implementation
+
+**Key Decisions**:
+1. **Template Rendering**: Jinja2 with autoescape=False for Markdown
+2. **HTTP Client**: httpx for LLM API communication (timeout, retry support)
+3. **Heuristic Classifier**: Weighted TF-IDF with structural feature boosting
+4. **High-Signal Extraction**: Decision marker regex + sliding window
+5. **Configuration**: tomli/tomllib for TOML, strict env-var-only for API keys
+6. **Interactive TUI**: prompt_toolkit for arrow key navigation
+7. **LLM Abstraction**: ABC pattern for pluggable backends
+8. **Template Data**: Dataclasses + nested dicts for type safety
+
+---
+
+## Phase 1: Design & Contracts ✅
+
+**Status**: Complete
+
+**Artifacts**:
+- [data-model.md](./data-model.md) - Entity definitions and relationships
+- [contracts/classification-result.schema.json](./contracts/classification-result.schema.json) - Detection output schema
+- [contracts/llm-config.schema.json](./contracts/llm-config.schema.json) - LLM configuration schema
+- [contracts/meeting-notes.schema.json](./contracts/meeting-notes.schema.json) - Notes output schema
+- [quickstart.md](./quickstart.md) - User documentation
+- `.github/agents/copilot-instructions.md` - Updated agent context
+
+**Data Model Summary**:
+- 7 core entities defined (MeetingType, ClassificationResult, LLMConfiguration, TranscriptReference, GroundedItem, NotesTemplate, MeetingNotes)
+- Validation rules for each entity (confidence ranges, grounding requirements, security constraints)
+- Clear data flow: Transcript → Classification → Selection → Generation → Rendering → Output
+
+**Contract Highlights**:
+- JSON schemas enforce FR-011 (grounding requirement), FR-016 (API key security), FR-007 (confidence ranges)
+- TypeScript-compatible schemas for potential future tooling
+- Examples included for all happy paths and edge cases
+
+---
+
+## Post-Design Constitution Re-Check ✅
+
+| Principle | Status | Notes |
+|-----------|--------|-------|
+| 1. User Control Over Automation | ✅ PASS | Interactive menu design complete, --no-interactive flag defined, CLI overrides documented |
+| 2. Safe-by-Default Execution | ✅ PASS | Fallback mechanisms designed, error handling in LLM abstraction, explicit failure modes in contracts |
+| 3. Transparency Over Magic | ✅ PASS | ClassificationResult includes evidence, engine_info logged in output, confidence scores visible |
+| 4. Deterministic First, Intelligent Second | ✅ PASS | Heuristic classifier is deterministic (TF-IDF), LLM optional, raw transcript preserved |
+| 5. Local-First by Default | ✅ PASS | Offline heuristic mode default, Ollama local option designed, no cloud requirement |
+| 6. Progressive Disclosure of Complexity | ✅ PASS | Zero-config defaults in schemas, advanced flags optional, quickstart covers beginner → advanced |
+| 7. Performance Is a Feature | ✅ PASS | High-signal segment extraction optimizes tokens, <200ms menu latency achievable with prompt_toolkit |
+| 8. Explicit Over Implicit Persistence | ✅ PASS | Config validation prevents API key storage, env-var-only enforced in schema, no telemetry |
+| 9. Media-Agnostic Input | N/A | No change to media handling |
+| 10. OSS Quality Bar | ✅ PASS | Comprehensive docs (quickstart, data model, contracts), stable CLI design, breaking changes avoided |
+
+**Result**: ✅ **CLEARED** - Design maintains constitutional compliance. No new violations introduced.
+
+---
+
+## Next Steps (Phase 2 - Not Part of This Command)
+
+The implementation plan is complete. Next phase (`/speckit.tasks`) will:
+1. Break down implementation into prioritized tasks
+2. Define test cases for each requirement
+3. Create execution checklist aligned with success criteria
+4. Link tasks to FR requirements for traceability
+
+**Ready for `/speckit.tasks`**
