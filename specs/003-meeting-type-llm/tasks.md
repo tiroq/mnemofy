@@ -94,11 +94,11 @@
 
 #### Testing for User Story 1
 
-- [ ] T039 [P] [US1] Add heuristic classifier tests in tests/test_classifier.py (test all 9 meeting types with sample transcripts)
-- [ ] T040 [P] [US1] Add template rendering tests in tests/test_template_rendering.py (verify all 9 templates render correctly)
-- [ ] T041 [P] [US1] Add basic notes extraction tests in tests/test_notes_enhanced.py (verify decisions, actions, mentions extracted)
-- [ ] T042 [P] [US1] Add CLI integration tests in tests/test_cli_integration.py (end-to-end: audio → transcript → classification → notes)
-- [ ] T043 [US1] Update integration pipeline tests in tests/test_integration_pipeline.py (add meeting type detection step)
+- [X] T039 [P] [US1] Add heuristic classifier tests in tests/test_classifier.py (test all 9 meeting types with sample transcripts)
+- [X] T040 [P] [US1] Add template rendering tests in tests/test_template_rendering.py (verify all 9 templates render correctly)
+- [X] T041 [P] [US1] Add basic notes extraction tests in tests/test_notes_enhanced.py (verify decisions, actions, mentions extracted)
+- [X] T042 [P] [US1] Add CLI integration tests in tests/test_cli_integration.py (end-to-end: audio → transcript → classification → notes)
+- [X] T043 [US1] Update integration pipeline tests in tests/test_integration_pipeline.py (add meeting type detection step)
 
 **Checkpoint**: User Story 1 complete - tool can auto-detect meeting types and generate structured notes offline without LLM
 
