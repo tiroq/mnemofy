@@ -1,7 +1,9 @@
 """Command-line interface for mnemofy."""
 
+import json
 import logging
 import time
+from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -807,13 +809,12 @@ def transcribe(
             "transcript_duration": metadata["duration"],
             "word_count": word_count,
             "segment_count": len(segments),
-            "config": proc_config.to_dict() if hasattr(proc_config, 'to_dict') else None,
+            "config": asdict(proc_config),
         }
         
         # Append to history file (JSONL format - one JSON object per line)
-        import json as json_module
         with open(history_path, "a", encoding="utf-8") as f:
-            f.write(json_module.dumps(run_record, ensure_ascii=False) + "\n")
+            f.write(json.dumps(run_record, ensure_ascii=False) + "\n")
         
         logger.debug(f"Appended run record to history: {history_path}")
         
@@ -896,6 +897,11 @@ def transcribe(
         
         # Save artifacts manifest
         manifest_path = manager.get_artifacts_manifest_path()
+        if model_suffix:
+            # Use model-suffixed manifest filename
+            manifest_path = manager.outdir / f"{manager.basename}.{selected_model}.artifacts.json"
+            logger.debug(f"Using model-suffixed manifest path: {manifest_path}")
+        
         manifest_path.write_text(manifest.to_json(), encoding="utf-8")
         
         # Clean up temporary audio file if needed
