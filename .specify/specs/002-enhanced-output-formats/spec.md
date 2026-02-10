@@ -8,6 +8,18 @@
 
 ---
 
+## Clarifications
+
+### Session 2026-02-10
+
+- Q: When --outdir is specified, where should the extracted .mnemofy.wav file be saved? → A: In --outdir like other outputs (keeps all artifacts together)
+- Q: If one output format fails to generate, what should mnemofy do? → A: Skip failed format, complete others (log warning) - best effort approach
+- Q: What minimum transcript length should trigger structured notes extraction? → A: 30 seconds minimum (skip notes for very short clips)
+- Q: What timing precision should SRT format use? → A: Milliseconds (HH:MM:SS,mmm) - standard SubRip specification
+- Q: Should JSON transcript include schema version field? → A: Include 'schema_version': '1.0' field for future compatibility
+
+---
+
 ## Overview
 
 Enhance mnemofy's transcription pipeline to produce multiple output formats with structured notes, automatic audio extraction from video, and flexible output directory control. This implements the core output management requirements from the detailed specification.
@@ -33,7 +45,7 @@ Users need a complete transcription pipeline that handles video inputs gracefull
 
 **Acceptance Criteria**:
 - When input is video (mkv, mp4, mov), extract audio automatically
-- Save extracted audio as `<basename>.mnemofy.wav` next to the original file
+- Save extracted audio as `<basename>.mnemofy.wav` in output directory (respects --outdir)
 - Normalize to 16kHz mono WAV format
 - Use extracted audio for transcription pipeline
 - Preserve original video file unmodified
@@ -48,9 +60,9 @@ Users need a complete transcription pipeline that handles video inputs gracefull
 
 **Acceptance Criteria**:
 - Generate `.transcript.txt` with timestamped lines `[HH:MM:SS–HH:MM:SS] text`
-- Generate `.transcript.srt` in standard SubRip format
-- Generate `.transcript.json` with segment-level metadata (start, end, text, confidence if available)
-- All formats saved next to input by default
+- Generate `.transcript.srt` in standard SubRip format (HH:MM:SS,mmm millisecond precision)
+- Generate `.transcript.json` with segment-level metadata (start, end, text, confidence if available, schema_version: '1.0')
+- All formats saved in output directory (default: same as input)
 - All formats use same segment boundaries (consistency)
 - JSON includes metadata: engine, model, language, duration
 
@@ -62,7 +74,7 @@ Users need a complete transcription pipeline that handles video inputs gracefull
 **So that** I can quickly identify topics, decisions, and action items without reading full transcripts
 
 **Acceptance Criteria**:
-- Generate `.notes.md` with required sections:
+- Generate `.notes.md` with required sections (minimum 30 seconds transcript length):
   - Metadata (date, source file, duration, engine, model)
   - Topics (with time ranges)
   - Decisions (with timestamps, or "No explicit decisions found")
@@ -73,6 +85,7 @@ Users need a complete transcription pipeline that handles video inputs gracefull
 - All extracted information MUST cite timestamps
 - No hallucinated information (only transcript-derived)
 - Deterministic output for `--notes basic` mode
+- For transcripts < 30 seconds: generate minimal notes with metadata only
 
 ---
 
@@ -84,9 +97,9 @@ Users need a complete transcription pipeline that handles video inputs gracefull
 **Acceptance Criteria**:
 - Support `--outdir <path>` flag
 - When set, write all outputs (wav, txt, srt, json, md) to specified directory
-- Create directory if it doesn't exist
+- Create directory if it doesn't exist (with proper error handling)
 - Preserve input file basenames in outputs
-- Default behavior unchanged (outputs next to input)
+- Default: outputs in same directory as input
 - Handle relative and absolute paths correctly
 
 ---
@@ -225,11 +238,15 @@ Output: 4-5 files (wav next to input, others in outdir)
 
 Given input `/path/to/meeting.mkv` with `--outdir /transcripts`:
 
-- Audio: `/path/to/meeting.mnemofy.wav` (next to input, always)
+- Audio: `/transcripts/meeting.mnemofy.wav` (in outdir with other artifacts)
 - TXT: `/transcripts/meeting.transcript.txt`
 - SRT: `/transcripts/meeting.transcript.srt`
 - JSON: `/transcripts/meeting.transcript.json`
 - Notes: `/transcripts/meeting.notes.md`
+
+Without `--outdir` (default behavior):
+
+- All outputs: `/path/to/meeting.{mnemofy.wav,transcript.txt,transcript.srt,transcript.json,notes.md}`
 
 ---
 
@@ -246,16 +263,20 @@ Given input `/path/to/meeting.mkv` with `--outdir /transcripts`:
 
 ### Non-Functional Requirements
 1. **Predictability**: Users can always find extracted audio next to original video
-2. **Consistency**: All output formats use identical segment boundaries
-3. **No Hallucination**: Notes only contain transcript-derived information with timestamps
-4. **Backward Compatibility**: Existing CLI usage still works (new flags optional)
-5. **Performance**: Format conversion adds <5% overhead to total pipeline time
+1. **Predictability**: All outputs in single directory (default: input dir, or specified --outdir)
+2. **Resilience**: If one format fails, others complete successfully (best-effort approach)
+3. **Consistency**: All output formats use identical segment boundaries
+4. **No Hallucination**: Notes only contain transcript-derived information with timestamps
+5. **Backward Compatibility**: Existing CLI usage still works (new flags optional)
+6. **Performance**: Format conversion adds <5% overhead to total pipeline time
+7. **Minimum Viable Notes**: Transcripts < 30 seconds generate metadata-only notes
 
 ### Measurable Outcomes
-- 100% of video inputs produce `.mnemofy.wav` next to original
+- 100% of video inputs produce `.mnemofy.wav` in output directory
 - 100% of transcriptions produce 3 formats + notes (4-5 files total)
 - 100% of notes sections cite timestamps
 - 0 hallucinated information in `--notes basic` mode
+- ≥95% success rate for individual format generation (best-effort approach)
 - --outdir creates directory if missing (100% success rate)
 
 ---
