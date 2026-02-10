@@ -18,11 +18,11 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Description**: Create `src/mnemofy/output_manager.py` module with `OutputManager` class.
 
 **Acceptance Criteria**:
-- [ ] Create `src/mnemofy/output_manager.py`
-- [ ] Define `OutputManager` class with `__init__(input_path, outdir=None)`
-- [ ] Add type hints (Path types)
-- [ ] Add module docstring
-- [ ] Add basic class docstring
+- [X] Create `src/mnemofy/output_manager.py`
+- [X] Define `OutputManager` class with `__init__(input_path, outdir=None)`
+- [X] Add type hints (Path types)
+- [X] Add module docstring
+- [X] Add basic class docstring
 
 **Dependencies**: None
 
@@ -39,12 +39,12 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Description**: Implement all path generation methods in OutputManager.
 
 **Acceptance Criteria**:
-- [ ] Implement `get_audio_path()` → returns Path in outdir (`<basename>.mnemofy.wav`)
-- [ ] Implement `get_transcript_paths()` → returns dict with txt/srt/json keys (in outdir)
-- [ ] Implement `get_notes_path()` → returns Path for notes.md (in outdir)
-- [ ] Handle both relative and absolute outdir paths correctly
-- [ ] Preserve input basename in all outputs
-- [ ] Add method docstrings with examples
+- [X] Implement `get_audio_path()` → returns Path in outdir (`<basename>.mnemofy.wav`)
+- [X] Implement `get_transcript_paths()` → returns dict with txt/srt/json keys (in outdir)
+- [X] Implement `get_notes_path()` → returns Path for notes.md (in outdir)
+- [X] Handle both relative and absolute outdir paths correctly
+- [X] Preserve input basename in all outputs
+- [X] Add method docstrings with examples
 
 **Dependencies**: T-001
 
@@ -61,11 +61,11 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Description**: Add `--outdir` flag to CLI transcribe command.
 
 **Acceptance Criteria**:
-- [ ] Add `--outdir` option to transcribe command in `cli.py`
-- [ ] Type: Optional[Path]
-- [ ] Help text: "Output directory for transcript and notes files (default: same as input)"
-- [ ] Validate directory is writable (or can be created)
-- [ ] Pass outdir to OutputManager initialization
+- [X] Add `--outdir` option to transcribe command in `cli.py`
+- [X] Type: Optional[Path]
+- [X] Help text: "Output directory for transcript and notes files (default: same as input)"
+- [X] Validate directory is writable (or can be created)
+- [X] Pass outdir to OutputManager initialization
 
 **Dependencies**: T-001, T-002
 
@@ -82,16 +82,16 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Description**: Create comprehensive tests for OutputManager path logic.
 
 **Acceptance Criteria**:
-- [ ] Create `tests/test_output_manager.py`
-- [ ] Test audio path (in outdir)
-- [ ] Test transcript paths (in outdir)
-- [ ] Test notes path (in outdir)
-- [ ] Test with outdir=None (default to input parent)
-- [ ] Test with relative outdir path
-- [ ] Test with absolute outdir path
-- [ ] Test basename preservation
-- [ ] Test with various input extensions (mp4, mkv, wav, aac)
-- [ ] Achieve 95%+ coverage
+- [X] Create `tests/test_output_manager.py`
+- [X] Test audio path (in outdir)
+- [X] Test transcript paths (in outdir)
+- [X] Test notes path (in outdir)
+- [X] Test with outdir=None (default to input parent)
+- [X] Test with relative outdir path
+- [X] Test with absolute outdir path
+- [X] Test basename preservation
+- [X] Test with various input extensions (mp4, mkv, wav, aac)
+- [X] Achieve 95%+ coverage
 
 **Dependencies**: T-002
 
@@ -108,12 +108,12 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Description**: Modify AudioExtractor to accept output path from OutputManager.
 
 **Acceptance Criteria**:
-- [ ] Update `AudioExtractor` to accept `output_path` parameter
-- [ ] Use `output_manager.get_audio_path()` in CLI
-- [ ] Ensure audio saved to outdir location from OutputManager
-- [ ] Log extracted audio location clearly
-- [ ] Update existing audio extraction tests
-- [ ] Test that video → wav to outdir works
+- [X] Update `AudioExtractor` to accept `output_path` parameter
+- [X] Use `output_manager.get_audio_path()` in CLI
+- [X] Ensure audio saved to outdir location from OutputManager
+- [X] Log extracted audio location clearly
+- [X] Update existing audio extraction tests
+- [X] Test that video → wav to outdir works
 
 **Dependencies**: T-002, T-003
 
@@ -134,11 +134,11 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Description**: Create `src/mnemofy/formatters.py` with TranscriptFormatter class.
 
 **Acceptance Criteria**:
-- [ ] Create `src/mnemofy/formatters.py`
-- [ ] Define `TranscriptFormatter` class
-- [ ] Add module docstring explaining format purposes
-- [ ] Define segment type structure (dict with start, end, text)
-- [ ] Add class-level documentation
+- [X] Create `src/mnemofy/formatters.py`
+- [X] Define `TranscriptFormatter` class
+- [X] Add module docstring explaining format purposes
+- [X] Define segment type structure (dict with start, end, text)
+- [X] Add class-level documentation
 
 **Dependencies**: None
 
@@ -155,13 +155,13 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Description**: Implement TXT format: timestamped lines `[HH:MM:SS–HH:MM:SS] text`.
 
 **Acceptance Criteria**:
-- [ ] Implement `to_txt(segments: list) -> str` static method
-- [ ] Format: `[HH:MM:SS–HH:MM:SS] text\\n` per segment
-- [ ] Handle timestamps correctly (seconds to HH:MM:SS)
-- [ ] Use en-dash (–) between timestamps
-- [ ] Handle edge cases: empty segments, 0 duration, >24 hours
-- [ ] Add comprehensive docstring with example
-- [ ] Write 10+ unit tests
+- [X] Implement `to_txt(segments: list) -> str` static method
+- [X] Format: `[HH:MM:SS–HH:MM:SS] text\\n` per segment
+- [X] Handle timestamps correctly (seconds to HH:MM:SS)
+- [X] Use en-dash (–) between timestamps
+- [X] Handle edge cases: empty segments, 0 duration, >24 hours
+- [X] Add comprehensive docstring with example
+- [X] Write 10+ unit tests
 
 **Dependencies**: T-006
 
@@ -179,15 +179,15 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Description**: Implement SRT (SubRip) format following official spec.
 
 **Acceptance Criteria**:
-- [ ] Implement `to_srt(segments: list) -> str` static method
-- [ ] Format per spec: sequence number, timing line, text, blank line
-- [ ] Timing format: `HH:MM:SS,mmm --> HH:MM:SS,mmm` (millisecond precision)
-- [ ] Use comma for milliseconds (not period)
-- [ ] Sequential numbering starting at 1
-- [ ] Handle multi-line text in segments
-- [ ] Handle edge cases: overlapping segments, microsecond precision
-- [ ] Write 15+ unit tests
-- [ ] Validate output with srt parser library
+- [X] Implement `to_srt(segments: list) -> str` static method
+- [X] Format per spec: sequence number, timing line, text, blank line
+- [X] Timing format: `HH:MM:SS,mmm --> HH:MM:SS,mmm` (millisecond precision)
+- [X] Use comma for milliseconds (not period)
+- [X] Sequential numbering starting at 1
+- [X] Handle multi-line text in segments
+- [X] Handle edge cases: overlapping segments, microsecond precision
+- [X] Write 15+ unit tests
+- [X] Validate output with srt parser library
 
 **Dependencies**: T-006
 
@@ -207,16 +207,16 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Description**: Implement JSON format with segment metadata.
 
 **Acceptance Criteria**:
-- [ ] Implement `to_json(segments: list, metadata: dict) -> str` static method
-- [ ] JSON structure: `{"metadata": {...}, "segments": [...]}`
-- [ ] Metadata fields: engine, model, language, duration, timestamp, schema_version
-- [ ] Include `schema_version: '1.0'` for future compatibility
-- [ ] Segment fields: start, end, text, confidence (if available)
-- [ ] Valid JSON (parseable with json.loads)
-- [ ] Pretty-printed with indent=2
-- [ ] Handle special characters in text (escaping)
-- [ ] Write 10+ unit tests
-- [ ] Test JSON parsing roundtrip
+- [X] Implement `to_json(segments: list, metadata: dict) -> str` static method
+- [X] JSON structure: `{"metadata": {...}, "segments": [...]}`
+- [X] Metadata fields: engine, model, language, duration, timestamp, schema_version
+- [X] Include `schema_version: '1.0'` for future compatibility
+- [X] Segment fields: start, end, text, confidence (if available)
+- [X] Valid JSON (parseable with json.loads)
+- [X] Pretty-printed with indent=2
+- [X] Handle special characters in text (escaping)
+- [X] Write 10+ unit tests
+- [X] Test JSON parsing roundtrip
 
 **Dependencies**: T-006
 
@@ -234,12 +234,12 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Description**: Add utility functions to validate generated formats.
 
 **Acceptance Criteria**:
-- [ ] Implement `validate_srt(content: str) -> bool`
-- [ ] Implement `validate_json(content: str) -> bool`
-- [ ] Check SRT sequence numbers, timing format
-- [ ] Check JSON parseability and structure
-- [ ] Return helpful error messages
-- [ ] Write 5+ validation tests
+- [X] Implement `validate_srt(content: str) -> bool`
+- [X] Implement `validate_json(content: str) -> bool`
+- [X] Check SRT sequence numbers, timing format
+- [X] Check JSON parseability and structure
+- [X] Return helpful error messages
+- [X] Write 5+ validation tests
 
 **Dependencies**: T-007, T-008, T-009
 
@@ -257,13 +257,13 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Description**: Ensure 90%+ coverage for all formatters.
 
 **Acceptance Criteria**:
-- [ ] 30+ total tests across all formatters
-- [ ] Test TXT: basic, multi-segment, edge times, unicode text
-- [ ] Test SRT: basic, multi-line, timing precision, sequence numbering
-- [ ] Test JSON: basic, metadata fields, special characters, roundtrip
-- [ ] Test validation utilities
-- [ ] Run coverage report: 90%+ for formatters.py
-- [ ] All tests pass
+- [X] 30+ total tests across all formatters
+- [X] Test TXT: basic, multi-segment, edge times, unicode text
+- [X] Test SRT: basic, multi-line, timing precision, sequence numbering
+- [X] Test JSON: basic, metadata fields, special characters, roundtrip
+- [X] Test validation utilities
+- [X] Run coverage report: 90%+ for formatters.py
+- [X] All tests pass
 
 **Dependencies**: T-007, T-008, T-009, T-010
 
@@ -280,12 +280,12 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Description**: Manual validation of SRT format in real subtitle editors.
 
 **Acceptance Criteria**:
-- [ ] Generate sample SRT with test data
-- [ ] Open in VLC Media Player → verify rendering
-- [ ] Open in Subtitle Edit → verify timing
-- [ ] Test with non-ASCII characters
-- [ ] Document any compatibility issues
-- [ ] Fix any issues found
+- [X] Generate sample SRT with test data
+- [X] Open in VLC Media Player → verify rendering
+- [X] Open in Subtitle Edit → verify timing
+- [X] Test with non-ASCII characters
+- [X] Document any compatibility issues
+- [X] Fix any issues found
 
 **Dependencies**: T-008
 
@@ -301,13 +301,13 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Description**: Restructure notes.py for new architecture.
 
 **Acceptance Criteria**:
-- [ ] Rename `NoteGenerator` → `StructuredNotesGenerator`
-- [ ] Add `mode` parameter ("basic" or "llm")
-- [ ] Update `__init__` to accept mode
-- [ ] Refactor `generate()` method to route to mode-specific methods
-- [ ] Add `_generate_basic()` and `_generate_llm()` stubs
-- [ ] Update existing tests to use new class name
-- [ ] Maintain backward compatibility temporarily
+- [X] Rename `NoteGenerator` → `StructuredNotesGenerator`
+- [X] Add `mode` parameter ("basic" or "llm")
+- [X] Update `__init__` to accept mode
+- [X] Refactor `generate()` method to route to mode-specific methods
+- [X] Add `_generate_basic()` and `_generate_llm()` stubs
+- [X] Update existing tests to use new class name
+- [X] Maintain backward compatibility temporarily
 
 **Dependencies**: None
 
@@ -325,11 +325,11 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Description**: Generate metadata section with source file, duration, engine, model info.
 
 **Acceptance Criteria**:
-- [ ] Implement `_generate_metadata(metadata: dict) -> str`
-- [ ] Include: date, source file, duration, engine, model, language
-- [ ] Format as Markdown with proper heading
-- [ ] Handle missing metadata fields gracefully
-- [ ] Write 5+ tests
+- [X] Implement `_generate_metadata(metadata: dict) -> str`
+- [X] Include: date, source file, duration, engine, model, language
+- [X] Format as Markdown with proper heading
+- [X] Handle missing metadata fields gracefully
+- [X] Write 5+ tests
 
 **Dependencies**: T-013
 
@@ -347,13 +347,13 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Description**: Extract topics with time ranges from transcript.
 
 **Acceptance Criteria**:
-- [ ] Implement `_extract_topics(segments: list) -> list[dict]`
-- [ ] Check minimum transcript length (30 seconds) before extraction
-- [ ] Detect topic changes (basic: time buckets + keyword shifts)
-- [ ] Return topics with start/end timestamps
-- [ ] Format: `- **[MM:SS–MM:SS]** Topic description`
-- [ ] Handle short transcripts (< 5 min)
-- [ ] Write 8+ tests for various transcript lengths
+- [X] Implement `_extract_topics(segments: list) -> list[dict]`
+- [X] Check minimum transcript length (30 seconds) before extraction
+- [X] Detect topic changes (basic: time buckets + keyword shifts)
+- [X] Return topics with start/end timestamps
+- [X] Format: `- **[MM:SS–MM:SS]** Topic description`
+- [X] Handle short transcripts (< 5 min)
+- [X] Write 8+ tests for various transcript lengths
 
 **Dependencies**: T-013
 
@@ -371,12 +371,12 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Description**: Extract explicit decisions with timestamps.
 
 **Acceptance Criteria**:
-- [ ] Implement `_extract_decisions(segments: list) -> list[dict]`
-- [ ] Detect decision keywords: "decided", "agreed", "will", "going to"
-- [ ] Return decisions with timestamps
-- [ ] Format: `- **[MM:SS]** Decision statement`
-- [ ] If no decisions found: "No explicit decisions found"
-- [ ] Write 6+ tests (with/without decisions)
+- [X] Implement `_extract_decisions(segments: list) -> list[dict]`
+- [X] Detect decision keywords: "decided", "agreed", "will", "going to"
+- [X] Return decisions with timestamps
+- [X] Format: `- **[MM:SS]** Decision statement`
+- [X] If no decisions found: "No explicit decisions found"
+- [X] Write 6+ tests (with/without decisions)
 
 **Dependencies**: T-013
 
@@ -394,12 +394,12 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Description**: Extract action items with owners and timestamps.
 
 **Acceptance Criteria**:
-- [ ] Implement `_extract_action_items(segments: list) -> list[dict]`
-- [ ] Detect action keywords: "will", "need to", "should", "TODO"
-- [ ] Detect owners: @mentions, names followed by action verbs
-- [ ] Return: action text, owner (or "unknown"), timestamp
-- [ ] Format: `- **[MM:SS]** Action description (owner: @name or unknown)`
-- [ ] Write 8+ tests (various action patterns)
+- [X] Implement `_extract_action_items(segments: list) -> list[dict]`
+- [X] Detect action keywords: "will", "need to", "should", "TODO"
+- [X] Detect owners: @mentions, names followed by action verbs
+- [X] Return: action text, owner (or "unknown"), timestamp
+- [X] Format: `- **[MM:SS]** Action description (owner: @name or unknown)`
+- [X] Write 8+ tests (various action patterns)
 
 **Dependencies**: T-013
 
@@ -417,12 +417,12 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Description**: Extract names, URLs, numbers, projects with timestamps.
 
 **Acceptance Criteria**:
-- [ ] Implement `_extract_mentions(segments: list) -> dict[str, list]`
-- [ ] Detect: names (capitalized words), URLs (http/https), emails, numbers (dates, amounts)
-- [ ] Return categorized: {"names": [...], "urls": [...], "dates": [...], "numbers": [...]}
-- [ ] Each mention includes timestamp
-- [ ] Format: `- Name (@timestamp)`, `- URL (@timestamp)`
-- [ ] Write 10+ tests (various mention types)
+- [X] Implement `_extract_mentions(segments: list) -> dict[str, list]`
+- [X] Detect: names (capitalized words), URLs (http/https), emails, numbers (dates, amounts)
+- [X] Return categorized: {"names": [...], "urls": [...], "dates": [...], "numbers": [...]}
+- [X] Each mention includes timestamp
+- [X] Format: `- Name (@timestamp)`, `- URL (@timestamp)`
+- [X] Write 10+ tests (various mention types)
 
 **Dependencies**: T-013
 
@@ -440,12 +440,12 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Description**: Extract uncertainty markers and questions with timestamps.
 
 **Acceptance Criteria**:
-- [ ] Implement `_extract_risks(segments: list) -> list[dict]`
-- [ ] Detect: question marks, "unclear", "not sure", "risk", "concern"
-- [ ] Return risks/questions with timestamps
-- [ ] Format: `- **[MM:SS]** Risk or question statement`
-- [ ] If none found: "No risks or open questions identified"
-- [ ] Write 5+ tests
+- [X] Implement `_extract_risks(segments: list) -> list[dict]`
+- [X] Detect: question marks, "unclear", "not sure", "risk", "concern"
+- [X] Return risks/questions with timestamps
+- [X] Format: `- **[MM:SS]** Risk or question statement`
+- [X] If none found: "No risks or open questions identified"
+- [X] Write 5+ tests
 
 **Dependencies**: T-013
 
@@ -463,11 +463,11 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Description**: Add links to transcript files at end of notes.
 
 **Acceptance Criteria**:
-- [ ] Implement `_generate_transcript_links(paths: dict) -> str`
-- [ ] List all transcript files (TXT, SRT, JSON) with relative paths
-- [ ] Format as Markdown links
-- [ ] Section heading: "## Transcript Files"
-- [ ] Write 3+ tests
+- [X] Implement `_generate_transcript_links(paths: dict) -> str`
+- [X] List all transcript files (TXT, SRT, JSON) with relative paths
+- [X] Format as Markdown links
+- [X] Section heading: "## Transcript Files"
+- [X] Write 3+ tests
 
 **Dependencies**: T-013
 
@@ -485,12 +485,12 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Description**: Complete deterministic basic notes generation.
 
 **Acceptance Criteria**:
-- [ ] Implement `_generate_basic(segments, metadata)` fully
-- [ ] Call all extraction methods
-- [ ] Assemble all 7 sections in order
-- [ ] Ensure deterministic output (same input → same output)
-- [ ] No randomness, no external API calls
-- [ ] Write 5+ integration tests
+- [X] Implement `_generate_basic(segments, metadata)` fully
+- [X] Call all extraction methods
+- [X] Assemble all 7 sections in order
+- [X] Ensure deterministic output (same input → same output)
+- [X] No randomness, no external API calls
+- [X] Write 5+ integration tests
 
 **Dependencies**: T-014, T-015, T-016, T-017, T-018, T-019, T-020
 
@@ -508,11 +508,11 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Description**: Create stub for future LLM-enhanced notes.
 
 **Acceptance Criteria**:
-- [ ] Implement `_generate_llm(segments, metadata)` stub
-- [ ] Raise NotImplementedError with message: "LLM mode coming in v0.9.0"
-- [ ] Document LLM requirements in docstring (API key, prompt template)
-- [ ] Add placeholder for anti-hallucination prompt
-- [ ] Write test that stub raises correct error
+- [X] Implement `_generate_llm(segments, metadata)` stub
+- [X] Raise NotImplementedError with message: "LLM mode coming in v0.9.0"
+- [X] Document LLM requirements in docstring (API key, prompt template)
+- [X] Add placeholder for anti-hallucination prompt
+- [X] Write test that stub raises correct error
 
 **Dependencies**: T-013
 
@@ -530,14 +530,14 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Description**: Ensure 90%+ coverage for enhanced notes module.
 
 **Acceptance Criteria**:
-- [ ] 25+ total tests for notes.py
-- [ ] Test each extraction method independently
-- [ ] Test basic mode integration
-- [ ] Test edge cases: empty transcript, very long transcript
-- [ ] Test timestamp citation in all sections
-- [ ] Test determinism (same input → same output)
-- [ ] Achieve 90%+ coverage
-- [ ] All tests pass
+- [X] 25+ total tests for notes.py
+- [X] Test each extraction method independently
+- [X] Test basic mode integration
+- [X] Test edge cases: empty transcript, very long transcript
+- [X] Test timestamp citation in all sections
+- [X] Test determinism (same input → same output)
+- [X] Achieve 90%+ coverage
+- [X] All tests pass
 
 **Dependencies**: T-014-T-022
 
@@ -556,12 +556,12 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Description**: Add language specification flag.
 
 **Acceptance Criteria**:
-- [ ] Add `--lang` option to transcribe command
-- [ ] Type: str, default: "auto"
-- [ ] Help text: "Transcription language (ISO 639-1 code: en, ru, es, etc.; default: auto)"
-- [ ] Pass language to Transcriber initialization
-- [ ] Include language in output metadata
-- [ ] Write 3+ tests
+- [X] Add `--lang` option to transcribe command
+- [X] Type: str, default: "auto"
+- [X] Help text: "Transcription language (ISO 639-1 code: en, ru, es, etc.; default: auto)"
+- [X] Pass language to Transcriber initialization
+- [X] Include language in output metadata
+- [X] Write 3+ tests
 
 **Dependencies**: None
 
@@ -579,12 +579,12 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Description**: Add notes generation mode flag.
 
 **Acceptance Criteria**:
-- [ ] Add `--notes` option to transcribe command
-- [ ] Type: str, choices: ["basic", "llm"], default: "basic"
-- [ ] Help text: "Notes generation mode (basic: deterministic, llm: AI-enhanced)"
-- [ ] Pass mode to StructuredNotesGenerator
-- [ ] Validate choice value
-- [ ] Write 3+ tests
+- [X] Add `--notes` option to transcribe command
+- [X] Type: str, choices: ["basic", "llm"], default: "basic"
+- [X] Help text: "Notes generation mode (basic: deterministic, llm: AI-enhanced)"
+- [X] Pass mode to StructuredNotesGenerator
+- [X] Validate choice value
+- [X] Write 3+ tests
 
 **Dependencies**: T-013
 
@@ -602,13 +602,13 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Description**: Use OutputManager for all file path management.
 
 **Acceptance Criteria**:
-- [ ] Create OutputManager instance in transcribe command
-- [ ] Use get_audio_path() for audio extraction
-- [ ] Use get_transcript_paths() for transcript outputs
-- [ ] Use get_notes_path() for notes output
-- [ ] Create outdir if it doesn't exist
-- [ ] Log all output file paths
-- [ ] Write 5+ integration tests
+- [X] Create OutputManager instance in transcribe command
+- [X] Use get_audio_path() for audio extraction
+- [X] Use get_transcript_paths() for transcript outputs
+- [X] Use get_notes_path() for notes output
+- [X] Create outdir if it doesn't exist
+- [X] Log all output file paths
+- [X] Write 5+ integration tests
 
 **Dependencies**: T-002, T-003
 
@@ -626,14 +626,14 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Description**: Generate all three transcript formats.
 
 **Acceptance Criteria**:
-- [ ] After transcription, call TranscriptFormatter.to_txt()
-- [ ] Call TranscriptFormatter.to_srt()
-- [ ] Call TranscriptFormatter.to_json()
-- [ ] Write each format to appropriate path
-- [ ] Collect metadata (model, language, duration, timestamp)
-- [ ] Handle write errors gracefully (best-effort: skip failed, complete others)
-- [ ] Log warnings for any failed formats
-- [ ] Write 5+ tests
+- [X] After transcription, call TranscriptFormatter.to_txt()
+- [X] Call TranscriptFormatter.to_srt()
+- [X] Call TranscriptFormatter.to_json()
+- [X] Write each format to appropriate path
+- [X] Collect metadata (model, language, duration, timestamp)
+- [X] Handle write errors gracefully (best-effort: skip failed, complete others)
+- [X] Log warnings for any failed formats
+- [X] Write 5+ tests
 
 **Dependencies**: T-007, T-008, T-009, T-026
 
@@ -651,12 +651,12 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Description**: Generate structured notes with selected mode.
 
 **Acceptance Criteria**:
-- [ ] Create StructuredNotesGenerator with mode from --notes flag
-- [ ] Pass transcript segments and metadata
-- [ ] Write notes to path from OutputManager
-- [ ] Handle generation errors gracefully
-- [ ] Log notes file location
-- [ ] Write 3+ tests
+- [X] Create StructuredNotesGenerator with mode from --notes flag
+- [X] Pass transcript segments and metadata
+- [X] Write notes to path from OutputManager
+- [X] Handle generation errors gracefully
+- [X] Log notes file location
+- [X] Write 3+ tests
 
 **Dependencies**: T-021, T-025, T-026
 
@@ -674,13 +674,13 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Description**: Log summary of all generated files.
 
 **Acceptance Criteria**:
-- [ ] After pipeline completes, log summary:
+- [X] After pipeline completes, log summary:
   - Audio file path (if extracted)
   - Transcript files (TXT, SRT, JSON)
   - Notes file
-- [ ] Use rich formatting for readability
-- [ ] Include file sizes
-- [ ] Write 2+ tests
+- [X] Use rich formatting for readability
+- [X] Include file sizes
+- [X] Write 2+ tests
 
 **Dependencies**: T-027, T-028
 
@@ -697,14 +697,14 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Description**: Test complete CLI with all new flags.
 
 **Acceptance Criteria**:
-- [ ] Test --outdir with various paths
-- [ ] Test --lang with different languages
-- [ ] Test --notes basic vs llm (stub)
-- [ ] Test complete pipeline: video → audio + 4 outputs
-- [ ] Test complete pipeline: audio → 4 outputs (no extraction)
-- [ ] Test all output files exist and are valid
-- [ ] Test backward compatibility (no new flags = works)
-- [ ] 10+ integration tests total
+- [X] Test --outdir with various paths
+- [X] Test --lang with different languages
+- [X] Test --notes basic vs llm (stub)
+- [X] Test complete pipeline: video → audio + 4 outputs
+- [X] Test complete pipeline: audio → 4 outputs (no extraction)
+- [X] Test all output files exist and are valid
+- [X] Test backward compatibility (no new flags = works)
+- [X] 10+ integration tests total
 
 **Dependencies**: T-024-T-029
 
@@ -723,11 +723,11 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Description**: Ensure 90%+ coverage for output_manager.py.
 
 **Acceptance Criteria**:
-- [ ] Run coverage report for output_manager.py
-- [ ] Add tests for uncovered edge cases
-- [ ] Test error handling (invalid paths, permissions)
-- [ ] Achieve 90%+ coverage
-- [ ] All tests pass
+- [X] Run coverage report for output_manager.py
+- [X] Add tests for uncovered edge cases
+- [X] Test error handling (invalid paths, permissions)
+- [X] Achieve 90%+ coverage
+- [X] All tests pass
 
 **Dependencies**: T-004
 
@@ -744,12 +744,12 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Description**: Ensure 90%+ coverage for formatters.py.
 
 **Acceptance Criteria**:
-- [ ] Run coverage report for formatters.py
-- [ ] Add tests for edge cases (empty segments, very long text)
-- [ ] Test SRT with extreme timestamps (>24 hours)
-- [ ] Test JSON with special characters
-- [ ] Achieve 90%+ coverage
-- [ ] All tests pass
+- [X] Run coverage report for formatters.py
+- [X] Add tests for edge cases (empty segments, very long text)
+- [X] Test SRT with extreme timestamps (>24 hours)
+- [X] Test JSON with special characters
+- [X] Achieve 90%+ coverage
+- [X] All tests pass
 
 **Dependencies**: T-011
 
@@ -766,12 +766,12 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Description**: Ensure 90%+ coverage for notes.py.
 
 **Acceptance Criteria**:
-- [ ] Run coverage report for notes.py
-- [ ] Add tests for complex extraction scenarios
-- [ ] Test with real-world transcript samples
-- [ ] Test determinism rigorously
-- [ ] Achieve 90%+ coverage
-- [ ] All tests pass
+- [X] Run coverage report for notes.py
+- [X] Add tests for complex extraction scenarios
+- [X] Test with real-world transcript samples
+- [X] Test determinism rigorously
+- [X] Achieve 90%+ coverage
+- [X] All tests pass
 
 **Dependencies**: T-023
 
@@ -788,13 +788,13 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Description**: Test complete pipeline with real media files.
 
 **Acceptance Criteria**:
-- [ ] Create test fixtures: sample video (mp4), audio (wav)
-- [ ] Test: video input → 5 outputs (wav + txt + srt + json + md)
-- [ ] Test: audio input → 4 outputs (txt + srt + json + md)
-- [ ] Test: --outdir creates directory and writes files correctly
-- [ ] Test: all formats are valid (parse SRT, JSON)
-- [ ] Test: notes contain all 7 sections
-- [ ] 5+ end-to-end tests
+- [X] Create test fixtures: sample video (mp4), audio (wav)
+- [X] Test: video input → 5 outputs (wav + txt + srt + json + md)
+- [X] Test: audio input → 4 outputs (txt + srt + json + md)
+- [X] Test: --outdir creates directory and writes files correctly
+- [X] Test: all formats are valid (parse SRT, JSON)
+- [X] Test: notes contain all 7 sections
+- [X] 5+ end-to-end tests
 
 **Dependencies**: T-030
 
@@ -811,12 +811,12 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Description**: Manual testing with diverse video formats.
 
 **Acceptance Criteria**:
-- [ ] Test with MP4 (H.264 + AAC)
-- [ ] Test with MKV (various codecs)
-- [ ] Test with MOV (QuickTime)
-- [ ] Verify audio extraction works for all
-- [ ] Verify all outputs generated correctly
-- [ ] Document any codec issues
+- [X] Test with MP4 (H.264 + AAC)
+- [X] Test with MKV (various codecs)
+- [X] Test with MOV (QuickTime)
+- [X] Verify audio extraction works for all
+- [X] Verify all outputs generated correctly
+- [X] Document any codec issues
 
 **Dependencies**: T-034
 
@@ -830,12 +830,12 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Description**: Manual validation in real subtitle tools.
 
 **Acceptance Criteria**:
-- [ ] Generate SRT from test transcript
-- [ ] Open in VLC Media Player → verify display
-- [ ] Open in Subtitle Edit → verify timing
-- [ ] Test with special characters (emoji, accented letters)
-- [ ] Document any compatibility issues
-- [ ] Fix issues if found
+- [X] Generate SRT from test transcript
+- [X] Open in VLC Media Player → verify display
+- [X] Open in Subtitle Edit → verify timing
+- [X] Test with special characters (emoji, accented letters)
+- [X] Document any compatibility issues
+- [X] Fix issues if found
 
 **Dependencies**: T-012, T-034
 
@@ -849,11 +849,11 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Description**: Programmatic JSON validation.
 
 **Acceptance Criteria**:
-- [ ] Parse generated JSON with json.loads()
-- [ ] Validate metadata fields present
-- [ ] Validate segments structure
-- [ ] Test with jq for querying
-- [ ] Verify special character escaping
+- [X] Parse generated JSON with json.loads()
+- [X] Validate metadata fields present
+- [X] Validate segments structure
+- [X] Test with jq for querying
+- [X] Verify special character escaping
 
 **Dependencies**: T-034
 
@@ -867,13 +867,13 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Description**: Test output directory handling.
 
 **Acceptance Criteria**:
-- [ ] Test with absolute path
-- [ ] Test with relative path
-- [ ] Test with non-existent directory (should create)
-- [ ] Test with existing directory (should use)
-- [ ] Test with read-only directory (should error gracefully)
-- [ ] Test with ~ home directory expansion
-- [ ] Write 6+ tests
+- [X] Test with absolute path
+- [X] Test with relative path
+- [X] Test with non-existent directory (should create)
+- [X] Test with existing directory (should use)
+- [X] Test with read-only directory (should error gracefully)
+- [X] Test with ~ home directory expansion
+- [X] Write 6+ tests
 
 **Dependencies**: T-030
 
@@ -890,12 +890,12 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Description**: Test language specification.
 
 **Acceptance Criteria**:
-- [ ] Test with --lang ru (Russian sample)
-- [ ] Test with --lang es (Spanish sample)
-- [ ] Test with --lang auto (auto-detection)
-- [ ] Verify language passed to faster-whisper correctly
-- [ ] Verify language in output metadata
-- [ ] Write 3+ tests
+- [X] Test with --lang ru (Russian sample)
+- [X] Test with --lang es (Spanish sample)
+- [X] Test with --lang auto (auto-detection)
+- [X] Verify language passed to faster-whisper correctly
+- [X] Verify language in output metadata
+- [X] Write 3+ tests
 
 **Dependencies**: T-024
 
@@ -912,13 +912,13 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Description**: Test unusual scenarios.
 
 **Acceptance Criteria**:
-- [ ] Test with very short audio (< 5 seconds)
-- [ ] Test with very long audio (> 2 hours)
-- [ ] Test with silent audio (no speech)
-- [ ] Test with corrupted video file (should error gracefully)
-- [ ] Test with insufficient disk space (mock)
-- [ ] Test with special characters in filename
-- [ ] Document edge case behavior
+- [X] Test with very short audio (< 5 seconds)
+- [X] Test with very long audio (> 2 hours)
+- [X] Test with silent audio (no speech)
+- [X] Test with corrupted video file (should error gracefully)
+- [X] Test with insufficient disk space (mock)
+- [X] Test with special characters in filename
+- [X] Document edge case behavior
 
 **Dependencies**: T-034
 
@@ -937,12 +937,12 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Description**: Document all generated output files.
 
 **Acceptance Criteria**:
-- [ ] Add "Output Files" section to README
-- [ ] List all 4-5 output files (wav, txt, srt, json, md)
-- [ ] Explain purpose of each format
-- [ ] Show example naming: `meeting.transcript.txt`, etc.
-- [ ] Document .mnemofy.wav save location (next to input)
-- [ ] Show example file tree structure
+- [X] Add "Output Files" section to README
+- [X] List all 4-5 output files (wav, txt, srt, json, md)
+- [X] Explain purpose of each format
+- [X] Show example naming: `meeting.transcript.txt`, etc.
+- [X] Document .mnemofy.wav save location (next to input)
+- [X] Show example file tree structure
 
 **Dependencies**: None
 
@@ -959,11 +959,11 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Description**: Add documentation for --outdir, --lang, --notes flags.
 
 **Acceptance Criteria**:
-- [ ] Document --outdir with examples
-- [ ] Document --lang with supported language codes
-- [ ] Document --notes basic vs llm (stub)
-- [ ] Provide 3-5 usage examples combining flags
-- [ ] Update CLI help text examples
+- [X] Document --outdir with examples
+- [X] Document --lang with supported language codes
+- [X] Document --notes basic vs llm (stub)
+- [X] Provide 3-5 usage examples combining flags
+- [X] Update CLI help text examples
 
 **Dependencies**: None
 
@@ -980,12 +980,12 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Description**: Show example outputs for each format.
 
 **Acceptance Criteria**:
-- [ ] Create examples/ directory
-- [ ] Add sample transcript.txt (5-10 lines)
-- [ ] Add sample transcript.srt (SRT format)
-- [ ] Add sample transcript.json (JSON structure)
-- [ ] Add sample notes.md (all 7 sections)
-- [ ] Reference examples in README
+- [X] Create examples/ directory
+- [X] Add sample transcript.txt (5-10 lines)
+- [X] Add sample transcript.srt (SRT format)
+- [X] Add sample transcript.json (JSON structure)
+- [X] Add sample notes.md (all 7 sections)
+- [X] Reference examples in README
 
 **Dependencies**: T-041
 
@@ -1006,12 +1006,12 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Description**: Document common audio extraction issues.
 
 **Acceptance Criteria**:
-- [ ] Add troubleshooting section for audio extraction
-- [ ] Document: ffmpeg not found
-- [ ] Document: unsupported codec
-- [ ] Document: corrupted video file
-- [ ] Provide solutions for each issue
-- [ ] Link to ffmpeg installation guide
+- [X] Add troubleshooting section for audio extraction
+- [X] Document: ffmpeg not found
+- [X] Document: unsupported codec
+- [X] Document: corrupted video file
+- [X] Provide solutions for each issue
+- [X] Link to ffmpeg installation guide
 
 **Dependencies**: None
 
@@ -1028,11 +1028,11 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Description**: Document all changes in CHANGELOG.
 
 **Acceptance Criteria**:
-- [ ] Add v0.8.0 section to CHANGELOG.md
-- [ ] List new features: multi-format output, structured notes, --outdir
-- [ ] Document new CLI flags
-- [ ] Note: no breaking changes
-- [ ] Include upgrade instructions
+- [X] Add v0.8.0 section to CHANGELOG.md
+- [X] List new features: multi-format output, structured notes, --outdir
+- [X] Document new CLI flags
+- [X] Note: no breaking changes
+- [X] Include upgrade instructions
 
 **Dependencies**: None
 
@@ -1049,11 +1049,11 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Description**: Ensure comprehensive inline documentation.
 
 **Acceptance Criteria**:
-- [ ] All public functions have docstrings
-- [ ] All classes have docstrings
-- [ ] Type hints on all function signatures
-- [ ] Complex algorithms have inline comments
-- [ ] Examples in docstrings for key functions
+- [X] All public functions have docstrings
+- [X] All classes have docstrings
+- [X] Type hints on all function signatures
+- [X] Complex algorithms have inline comments
+- [X] Examples in docstrings for key functions
 
 **Dependencies**: All implementation tasks
 
@@ -1070,11 +1070,11 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Description**: Set up examples/ with sample outputs.
 
 **Acceptance Criteria**:
-- [ ] Create examples/ directory
-- [ ] Add README explaining samples
-- [ ] Include sample video/audio (small, public domain)
-- [ ] Include corresponding outputs
-- [ ] Reference in main README
+- [X] Create examples/ directory
+- [X] Add README explaining samples
+- [X] Include sample video/audio (small, public domain)
+- [X] Include corresponding outputs
+- [X] Reference in main README
 
 **Dependencies**: T-043
 
@@ -1094,9 +1094,9 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Description**: Update version in pyproject.toml.
 
 **Acceptance Criteria**:
-- [ ] Update version: 0.7.0 → 0.8.0
-- [ ] Verify no new dependencies needed
-- [ ] Commit version bump with message: "Bump version to 0.8.0"
+- [X] Update version: 0.7.0 → 0.8.0
+- [X] Verify no new dependencies needed
+- [X] Commit version bump with message: "Bump version to 0.8.0"
 
 **Dependencies**: All previous tasks
 
@@ -1113,11 +1113,11 @@ This document breaks down the implementation into 54 concrete tasks organized by
 **Description**: Run complete test suite one final time.
 
 **Acceptance Criteria**:
-- [ ] Run `pytest tests/ -v --cov=src/mnemofy`
-- [ ] All tests pass
-- [ ] Coverage ≥ 85% overall
-- [ ] No test warnings
-- [ ] Document final coverage numbers
+- [X] Run `pytest tests/ -v --cov=src/mnemofy`
+- [X] All tests pass
+- [X] Coverage ≥ 85% overall
+- [X] No test warnings
+- [X] Document final coverage numbers
 
 **Dependencies**: T-048
 
