@@ -52,6 +52,10 @@ Repository = "https://github.com/tiroq/mnemofy"
 [tool.setuptools]
 packages = ["mnemofy", "mnemofy.tui", "mnemofy.llm"]
 package-dir = {"" = "src"}
+include-package-data = true
+
+[tool.setuptools.package-data]
+mnemofy = ["templates/*.md"]
 
 [tool.ruff]
 line-length = 100
