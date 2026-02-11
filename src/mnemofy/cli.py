@@ -465,6 +465,7 @@ def transcribe(
             task = progress.add_task("Generating formatted transcripts...", total=None)
 
             transcript_start = time.time()
+            transcriber = None
             
             if not skip_transcription:
                 transcriber = Transcriber(model_name=selected_model)
@@ -477,11 +478,11 @@ def transcribe(
             # Step 3.5: Normalize or repair transcript (if enabled and not skipped)
             transcript_changes = []
             
-            if not skip_transcription and (normalize or repair):
+            if not skip_transcription and (normalize or repair) and transcription is not None:
                 logger.debug(f"Transcript preprocessing enabled: normalize={normalize}, repair={repair}")
                 
-                # Create transcriber if not already created for normalization
-                if 'transcriber' not in locals():
+                # Ensure transcriber is initialized (it should be from the transcription step above)
+                if transcriber is None:
                     transcriber = Transcriber(model_name=selected_model)
                 
                 # Validate repair requirements
