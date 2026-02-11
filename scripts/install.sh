@@ -232,6 +232,12 @@ prompt_upgrade() {
     CURRENT_VERSION=$(mnemofy version 2>&1 | grep -o '[0-9]*\.[0-9]*\.[0-9]*' || echo "unknown")
     log_info "Current version: $CURRENT_VERSION"
     
+    # Check if running non-interactively (piped input)
+    if [ ! -t 0 ]; then
+        log_info "Running in non-interactive mode. Auto-upgrading..."
+        return 0
+    fi
+    
     echo ""
     read -p "Do you want to upgrade mnemofy? (y/n) " -n 1 -r
     echo
