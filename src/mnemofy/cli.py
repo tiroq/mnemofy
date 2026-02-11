@@ -417,6 +417,46 @@ def transcribe(
                 logger.debug(f"LLM initialization error: {e}")
 
         # Step 3: Generate formatted transcripts
+        # First, check if transcripts already exist
+        transcript_paths = manager.get_model_aware_transcript_paths(selected_model) if model_suffix else manager.get_transcript_paths()
+        transcript_json_path = transcript_paths["json"]
+        transcription = None
+        segments = None
+        skip_transcription = False
+        
+        if transcript_json_path.exists():
+            console.print(f"[yellow]Note:[/yellow] Transcripts already exist")
+            console.print("[dim]Press 's' to skip transcription, or any other key to re-transcribe: [/dim]", end="")
+            try:
+                choice = readchar.readchar()
+                if choice.lower() == 's':
+                    console.print("Skipping transcription")
+                    logger.debug("User chose to skip transcription, loading existing transcripts")
+                    skip_transcription = True
+                    
+                    # Load existing transcription from JSON
+                    import json
+                    with open(transcript_json_path, 'r', encoding='utf-8') as f:
+                        json_data = json.load(f)
+                    
+                    # Reconstruct transcription and segments from JSON
+                    if isinstance(json_data, dict) and 'segments' in json_data:
+                        segments = json_data['segments']
+                        transcription = {"segments": segments}
+                        if 'language' in json_data:
+                            transcription['language'] = json_data['language']
+                    elif isinstance(json_data, list):
+                        segments = json_data
+                        transcription = {"segments": segments}
+                    
+                    logger.debug(f"Loaded {len(segments) if segments else 0} segments from existing transcript")
+                else:
+                    console.print("Re-transcribing audio")
+                    logger.debug("User chose to re-transcribe")
+            except Exception as e:
+                console.print(f"Continuing with re-transcription...")
+                logger.debug(f"Interactive prompt failed: {e}, defaulting to re-transcription")
+        
         with Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
@@ -426,15 +466,23 @@ def transcribe(
 
             transcript_start = time.time()
             
-            transcriber = Transcriber(model_name=selected_model)
-            transcription = transcriber.transcribe(audio_file, language=lang)
-            segments = transcriber.get_segments(transcription)
+            if not skip_transcription:
+                transcriber = Transcriber(model_name=selected_model)
+                transcription = transcriber.transcribe(audio_file, language=lang)
+                segments = transcriber.get_segments(transcription)
+            else:
+                # Mark task as already done since we loaded existing transcript
+                task = progress.add_task("[green]✓ Transcripts loaded[/green]", total=None)
             
-            # Step 3.5: Normalize or repair transcript (if enabled)
+            # Step 3.5: Normalize or repair transcript (if enabled and not skipped)
             transcript_changes = []
             
-            if normalize or repair:
+            if not skip_transcription and (normalize or repair):
                 logger.debug(f"Transcript preprocessing enabled: normalize={normalize}, repair={repair}")
+                
+                # Create transcriber if not already created for normalization
+                if 'transcriber' not in locals():
+                    transcriber = Transcriber(model_name=selected_model)
                 
                 # Validate repair requirements
                 if repair and not llm_engine_instance:
@@ -483,6 +531,9 @@ def transcribe(
                         console.print(f"[yellow]Warning:[/yellow] Transcript repair failed: {e}")
                         console.print("[dim]Continuing with normalized transcript[/dim]")
                         logger.debug(f"Repair failed: {e}")
+            elif skip_transcription and (normalize or repair):
+                console.print("[dim]Skipping transcript preprocessing (using existing transcript)[/dim]")
+                logger.debug("Skipping transcript preprocessing because existing transcript was used")
             
             # Determine effective language: prefer explicit --lang, then detected, then fallback
             detected_language = transcription.get("language") if transcription else None
@@ -516,13 +567,7 @@ def transcribe(
             srt_output = TranscriptFormatter.to_srt(segments)
             json_output = TranscriptFormatter.to_json(segments, metadata)
             
-            # Write transcript files (use model-aware paths if requested)
-            if model_suffix:
-                transcript_paths = manager.get_model_aware_transcript_paths(selected_model)
-                logger.debug(f"Using model-aware paths with suffix: {selected_model}")
-            else:
-                transcript_paths = manager.get_transcript_paths()
-            
+            # Get paths for writing (already determined at the beginning)
             txt_path = transcript_paths["txt"]
             srt_path = transcript_paths["srt"]
             json_path = transcript_paths["json"]
