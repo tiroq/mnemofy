@@ -6,7 +6,7 @@ import time
 from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
 import readchar
 import typer
@@ -420,8 +420,8 @@ def transcribe(
         # First, check if transcripts already exist
         transcript_paths = manager.get_model_aware_transcript_paths(selected_model) if model_suffix else manager.get_transcript_paths()
         transcript_json_path = transcript_paths["json"]
-        transcription = None
-        segments = None
+        transcription: Optional[dict] = None
+        segments: List[dict] = []
         skip_transcription = False
         
         if transcript_json_path.exists():
@@ -441,7 +441,7 @@ def transcribe(
                     
                     # Reconstruct transcription and segments from JSON
                     if isinstance(json_data, dict) and 'segments' in json_data:
-                        segments = json_data['segments']
+                        segments = json_data['segments'] if isinstance(json_data['segments'], list) else []
                         transcription = {"segments": segments}
                         if 'language' in json_data:
                             transcription['language'] = json_data['language']
@@ -449,7 +449,7 @@ def transcribe(
                         segments = json_data
                         transcription = {"segments": segments}
                     
-                    logger.debug(f"Loaded {len(segments) if segments else 0} segments from existing transcript")
+                    logger.debug(f"Loaded {len(segments)} segments from existing transcript")
                 else:
                     console.print("Re-transcribing audio")
                     logger.debug("User chose to re-transcribe")
