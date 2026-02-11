@@ -35,23 +35,335 @@
    # macOS
    brew install ffmpeg
    
+   # Fedora
+   sudo dnf install ffmpeg
+   
+   # Arch
+   sudo pacman -S ffmpeg
+   
    # Windows
    # Download from https://ffmpeg.org/download.html
    ```
 
-### Install mnemofy
+### Install from PyPI (Recommended)
+
+**Using pipx** (isolated environment - recommended):
+```bash
+# Install pipx (if not already installed)
+pip install --user pipx
+pipx ensurepath
+
+# Install mnemofy
+pipx install mnemofy
+
+# Verify installation
+mnemofy version
+```
+
+**Using pip** (system-wide installation):
+```bash
+pip install mnemofy
+
+# Verify installation
+mnemofy version
+```
+
+### Install from Source (Development)
+
+For development or running the latest code from main branch:
 
 ```bash
 # Clone the repository
 git clone https://github.com/tiroq/mnemofy.git
 cd mnemofy
 
-# Install the package
+# Install the package in editable mode
 pip install -e .
 
 # Or install with development dependencies
 pip install -e ".[dev]"
+
+# Verify installation
+mnemofy version
 ```
+
+### Distribution-Specific Instructions
+
+**Ubuntu 22.04 / Debian 12:**
+```bash
+sudo apt update
+sudo apt install -y python3 python3-pip ffmpeg
+pipx install mnemofy
+```
+
+**Ubuntu 20.04 / Debian 11 (Python 3.8 - requires upgrade):**
+```bash
+sudo add-apt-repository ppa:deadsnakes/ppa
+sudo apt update
+sudo apt install -y python3.10 python3.10-venv python3-pip ffmpeg
+python3.10 -m pip install --user pipx
+pipx install mnemofy --python python3.10
+```
+
+**Fedora / CentOS / RHEL:**
+```bash
+sudo dnf install -y python3 python3-pip ffmpeg
+python3 -m pip install --user pipx
+pipx install mnemofy
+```
+
+**Arch / Manjaro:**
+```bash
+sudo pacman -Syu python python-pip ffmpeg
+python -m pip install --user pipx
+pipx ensurepath
+pipx install mnemofy
+```
+
+**macOS:**
+```bash
+# Using Homebrew (recommended)
+brew install python ffmpeg
+pip install --user pipx
+pipx ensurepath
+pipx install mnemofy
+
+# Or using MacPorts
+sudo port install python312 ffmpeg
+python3.12 -m pip install --user pipx
+pipx install mnemofy --python python3.12
+```
+
+**Windows:**
+1. Install Python 3.12+ from https://www.python.org/downloads/
+2. Install ffmpeg from https://ffmpeg.org/download.html or via Chocolatey:
+   ```powershell
+   choco install ffmpeg
+   ```
+3. Install mnemofy:
+   ```powershell
+   pip install --user pipx
+   pipx install mnemofy
+   ```
+
+### Docker Installation
+
+Run mnemofy in a Docker container without installing on your system:
+
+```bash
+docker run -v $(pwd):/workspace --rm \
+  python:3.12-slim sh -c \
+  "apt-get update && apt-get install -y ffmpeg && \
+   pip install mnemofy && \
+   mnemofy transcribe /workspace/yourfile.mp4"
+```
+
+### Verify Installation
+
+```bash
+# Check version
+mnemofy version
+
+# Show all available models
+mnemofy transcribe --list-models
+
+# View help
+mnemofy transcribe --help
+```
+
+## Upgrade
+
+### Upgrade from PyPI
+
+**If you installed with pipx:**
+```bash
+pipx upgrade mnemofy
+```
+
+**If you installed with pip:**
+```bash
+pip install --upgrade mnemofy
+```
+
+**To upgrade to a specific version:**
+```bash
+# Using pipx
+pipx install mnemofy==1.2.3
+
+# Using pip
+pip install mnemofy==1.2.3
+```
+
+### Upgrade from Source
+
+If you installed from source and want the latest development version:
+
+```bash
+cd path/to/mnemofy
+git pull origin main
+pip install -e .
+```
+
+### Check for Updates
+
+```bash
+# View current version
+mnemofy version
+
+# Check PyPI for latest version
+pip index versions mnemofy
+```
+
+### Breaking Changes
+
+Check [CHANGELOG.md](CHANGELOG.md) for breaking changes before upgrading to a major version.
+
+## Troubleshooting
+
+### "externally-managed-environment" Error (Linux/Debian/Ubuntu)
+
+Modern Debian/Ubuntu systems (23.04+, Debian 12+) implement PEP 668 to prevent breaking system Python packages.
+
+**Error message:**
+```
+error: externally-managed-environment
+
+× This environment is externally managed
+```
+
+**Solutions** (in order of preference):
+
+**Option 1: Use pipx (Recommended)**
+```bash
+# Install pipx via your package manager
+sudo apt install pipx        # Ubuntu/Debian
+# or
+sudo dnf install pipx        # Fedora
+# or
+sudo pacman -S pipx          # Arch
+
+# Install mnemofy
+pipx install mnemofy
+
+# Add pipx to PATH if needed
+pipx ensurepath
+source ~/.bashrc
+```
+
+**Option 2: User-level installation with pip**
+```bash
+python3 -m pip install --user mnemofy
+# Add to PATH
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+**Option 3: Virtual environment**
+```bash
+python3 -m venv ~/mnemofy-env
+source ~/mnemofy-env/bin/activate
+pip install mnemofy
+# Use: ~/mnemofy-env/bin/mnemofy transcribe file.mp4
+```
+
+**Option 4: Override (not recommended)**
+```bash
+python3 -m pip install --break-system-packages mnemofy
+# This may break your system Python installation
+```
+
+See [INSTALL_LINUX.md](INSTALL_LINUX.md#if-you-encounter-externally-managed-environment-error) for detailed Linux installation guide.
+
+### Command Not Found
+
+If `mnemofy` is not found after installation:
+
+```bash
+# Check if ~/.local/bin is in PATH
+echo $PATH | grep .local/bin
+
+# If not, add it to your shell profile (~/.bashrc, ~/.zshrc, etc.)
+export PATH="$HOME/.local/bin:$PATH"
+
+# Reload shell
+source ~/.bashrc  # or ~/.zshrc
+```
+
+### Python Too Old (< 3.9)
+
+If you see a Python version error:
+
+**Ubuntu/Debian (upgrade to Python 3.10+):**
+```bash
+sudo add-apt-repository ppa:deadsnakes/ppa
+sudo apt update
+sudo apt install python3.12 python3.12-venv
+
+# Install mnemofy with the newer Python
+pipx install mnemofy --python python3.12
+```
+
+**Other distributions:**
+Download Python 3.12+ from [python.org](https://www.python.org/downloads/) or use your distribution's package manager.
+
+### FFmpeg Missing
+
+If you get "ffmpeg not found" error:
+
+```bash
+# Ubuntu/Debian
+sudo apt install ffmpeg
+
+# Fedora
+sudo dnf install ffmpeg
+
+# macOS
+brew install ffmpeg
+
+# Arch
+sudo pacman -S ffmpeg
+
+# Verify installation
+ffmpeg -version
+```
+
+### Model Download Issues
+
+If models fail to download:
+
+```bash
+# Check internet connection
+ping huggingface.co
+
+# Clear cache and retry
+rm -rf ~/.cache/huggingface/
+mnemofy transcribe --model tiny audio.mp3
+
+# Use offline mode (if models already cached)
+HF_HUB_OFFLINE=1 mnemofy transcribe audio.mp3
+```
+
+### Out of Memory Issues
+
+If you get memory errors:
+
+```bash
+# Use a smaller model
+mnemofy transcribe file.mp4 --model tiny
+
+# Disable GPU
+mnemofy transcribe file.mp4 --no-gpu
+
+# Set memory limit for the process
+python -c "import resource; resource.setrlimit(resource.RLIMIT_AS, (2*1024**3, -1))" && \
+mnemofy transcribe file.mp4 --model base
+```
+
+### Need Help?
+
+- **Full documentation**: [INSTALL_LINUX.md](INSTALL_LINUX.md), [docs/](docs/)
+- **Quick start**: [QUICKSTART_LINUX.md](docs/QUICKSTART_LINUX.md)
+- **Issues**: [GitHub Issues](https://github.com/tiroq/mnemofy/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/tiroq/mnemofy/discussions)
 
 ## Usage
 
