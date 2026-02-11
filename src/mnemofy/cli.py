@@ -486,18 +486,34 @@ def transcribe(
                 # Mark task as already done since we loaded existing transcript
                 task = progress.add_task("[green]✓ Transcripts loaded[/green]", total=None)
             
-            # Step 3.5: Normalize or repair transcript (if enabled and not skipped)
+            # Step 3.5: Normalize or repair transcript (if enabled)
             transcript_changes = []
             
-            if not skip_transcription and (normalize or repair) and transcription is not None:
+            if (normalize or repair) and transcription is not None:
                 logger.debug(f"Transcript preprocessing enabled: normalize={normalize}, repair={repair}")
                 
-                # Ensure transcriber is initialized (it should be from the transcription step above)
+                # Ensure transcriber is initialized (needed for normalization/repair utilities)
                 if transcriber is None:
                     transcriber = Transcriber(model_name=selected_model)
                 
-                # Validate repair requirements
                 if repair_requested and repair and not llm_engine_instance:
+                    console.print(f"[yellow]Note:[/yellow] Repair requires LLM engine, which is not available")
+                    console.print("[dim]Press 'y' to proceed without repair, or any other key to cancel: [/dim]", end="")
+                    try:
+                        choice = readchar.readchar()
+                        if choice.lower() == 'y':
+                            console.print("Proceeding without repair")
+                            repair = False
+                            logger.debug("User chose to proceed without repair")
+                        else:
+                            console.print("Cancelled")
+                            console.print("[yellow]Please enable LLM engine or re-run without --repair flag[/yellow]")
+                            raise typer.Exit(1)
+                    except Exception as e:
+                        console.print("Proceeding without repair (non-interactive)")
+                        repair = False
+                        logger.debug(f"Interactive prompt failed: {e}, defaulting to proceed without repair")
+                else:
                     console.print("[yellow]Warning:[/yellow] --repair requires LLM engine, skipping repair")
                     repair = False
                 
@@ -543,29 +559,9 @@ def transcribe(
                         console.print(f"[yellow]Warning:[/yellow] Transcript repair failed: {e}")
                         console.print("[dim]Continuing with normalized transcript[/dim]")
                         logger.debug(f"Repair failed: {e}")
-            elif skip_transcription and (normalize or repair):
-                console.print("[dim]Skipping transcript re-transcription (using existing transcript)[/dim]")
-                logger.debug("Skipping transcript preprocessing because existing transcript was used")
-                
-            # Check if repair was requested but LLM engine not available
-                if repair_requested and repair and not llm_engine_instance:
-                console.print(f"[yellow]Note:[/yellow] Repair requires LLM engine, which is not available")
-                console.print("[dim]Press 'y' to proceed without repair, or any other key to cancel: [/dim]", end="")
-                try:
-                    choice = readchar.readchar()
-                    if choice.lower() == 'y':
-                        console.print("Proceeding without repair")
-                        repair = False
-                        logger.debug("User chose to proceed without repair")
-                    else:
-                        console.print("Cancelled")
-                        console.print("[yellow]Please enable LLM engine or re-transcribe without --repair flag[/yellow]")
-                        raise typer.Exit(1)
-                except Exception as e:
-                    # Non-interactive: proceed without repair
-                    console.print("Proceeding without repair (non-interactive)")
-                    repair = False
-                    logger.debug(f"Interactive prompt failed: {e}, defaulting to proceed without repair")
+            elif (normalize or repair) and transcription is None:
+                console.print("[yellow]Warning:[/yellow] No transcript available for normalization/repair")
+                logger.debug("Skipping normalization/repair because transcript is unavailable")
         
             # Determine effective language: prefer explicit --lang, then detected, then fallback
             detected_language = transcription.get("language") if transcription else None
