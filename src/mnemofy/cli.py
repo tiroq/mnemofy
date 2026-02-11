@@ -8,6 +8,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
+import readchar
 import typer
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
@@ -317,21 +318,58 @@ def transcribe(
             raise typer.Exit(1)
 
         console.print(f"\n[bold blue]mnemofy[/bold blue] - Processing {input_file.name}")
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            console=console,
-        ) as progress:
-            task = progress.add_task("Extracting audio...", total=None)
+        
+        # Check if audio has already been extracted
+        audio_output_path = manager.get_audio_path()
+        if audio_output_path.exists():
+            console.print(f"[yellow]Note:[/yellow] Audio file already exists: {audio_output_path}")
+            console.print("[dim]Press 's' to skip extraction, or any other key to re-extract: [/dim]", end="")
+            try:
+                choice = readchar.readchar()
+                if choice.lower() == 's':
+                    audio_file = audio_output_path
+                    console.print("Skipping extraction")
+                    logger.debug(f"User chose to skip audio extraction, using existing file: {audio_file}")
+                else:
+                    console.print("Re-extracting audio")
+                    with Progress(
+                        SpinnerColumn(),
+                        TextColumn("[progress.description]{task.description}"),
+                        console=console,
+                    ) as progress:
+                        task = progress.add_task("Extracting audio...", total=None)
+                        extractor = AudioExtractor()
+                        audio_file = extractor.extract_audio(input_file, output_file=audio_output_path)
+                        progress.update(task, description="[green]✓ Audio extracted")
+                    console.print(f"[dim]Audio file: {audio_file}[/dim]")
+            except Exception as e:
+                console.print(f"Continuing with re-extraction...")
+                logger.debug(f"Interactive prompt failed: {e}, defaulting to re-extraction")
+                with Progress(
+                    SpinnerColumn(),
+                    TextColumn("[progress.description]{task.description}"),
+                    console=console,
+                ) as progress:
+                    task = progress.add_task("Extracting audio...", total=None)
+                    extractor = AudioExtractor()
+                    audio_file = extractor.extract_audio(input_file, output_file=audio_output_path)
+                    progress.update(task, description="[green]✓ Audio extracted")
+                console.print(f"[dim]Audio file: {audio_file}[/dim]")
+        else:
+            with Progress(
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                console=console,
+            ) as progress:
+                task = progress.add_task("Extracting audio...", total=None)
 
-            # Use OutputManager to determine audio output path
-            audio_output_path = manager.get_audio_path()
-            extractor = AudioExtractor()
-            audio_file = extractor.extract_audio(input_file, output_file=audio_output_path)
+                # Use OutputManager to determine audio output path
+                extractor = AudioExtractor()
+                audio_file = extractor.extract_audio(input_file, output_file=audio_output_path)
 
-            progress.update(task, description="[green]✓ Audio extracted")
+                progress.update(task, description="[green]✓ Audio extracted")
 
-        console.print(f"[dim]Audio file: {audio_file}[/dim]")
+            console.print(f"[dim]Audio file: {audio_file}[/dim]")
 
         # Initialize LLM engine once if any LLM-backed feature is requested
         llm_engine_instance = None
@@ -386,6 +424,8 @@ def transcribe(
         ) as progress:
             task = progress.add_task("Generating formatted transcripts...", total=None)
 
+            transcript_start = time.time()
+            
             transcriber = Transcriber(model_name=selected_model)
             transcription = transcriber.transcribe(audio_file, language=lang)
             segments = transcriber.get_segments(transcription)
@@ -498,7 +538,17 @@ def transcribe(
                 changes_log_path.write_text(changes_output, encoding="utf-8")
                 console.print(f"[dim]Changes log: {changes_log_path}[/dim]")
 
-            progress.update(task, description="[green]✓ Transcripts generated")
+            transcript_duration = time.time() - transcript_start
+            
+            # Format duration nicely
+            if transcript_duration < 60:
+                duration_str = f"{transcript_duration:.1f}s"
+            else:
+                minutes = int(transcript_duration // 60)
+                seconds = transcript_duration % 60
+                duration_str = f"{minutes}m {seconds:.0f}s"
+            
+            progress.update(task, description=f"[green]✓ Transcripts generated ({duration_str})")
 
         # Step 4: Detect meeting type (if enabled)
         classification_result = None
@@ -691,12 +741,23 @@ def transcribe(
                 }
                 
                 # Render using appropriate template
-                notes_markdown = render_meeting_notes(
-                    detected_type,
-                    extracted_items,
-                    template_metadata,
-                    custom_template_dir=template.parent if template else None
-                )
+                try:
+                    notes_markdown = render_meeting_notes(
+                        detected_type,
+                        extracted_items,
+                        template_metadata,
+                        custom_template_dir=template.parent if template else None
+                    )
+                except Exception as e:
+                    from jinja2 import TemplateNotFound
+                    if isinstance(e, TemplateNotFound) or "Template" in str(e):
+                        console.print(f"[red]Error: {e}[/red]")
+                        console.print("[yellow]Tip:[/yellow] Check if templates are installed correctly")
+                        console.print("[dim]Try reinstalling mnemofy with: pip install -e .[/dim]")
+                        logger.debug(f"Template rendering failed: {e}")
+                        raise typer.Exit(1)
+                    else:
+                        raise
             else:
                 # Fall back to legacy notes generator
                 try:
