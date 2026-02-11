@@ -50,7 +50,7 @@ class TestListModelsFlag:
 
     def test_list_models_exits_without_transcribing(self, runner, test_audio_file):
         """Test --list-models exits without processing audio."""
-        with patch("mnemofy.cli.AudioExtractor") as mock_extractor:
+        with patch("mnemofy.pipeline.AudioExtractor") as mock_extractor:
             result = runner.invoke(
                 app,
                 ["transcribe", str(test_audio_file), "--list-models"],
@@ -104,9 +104,9 @@ class TestExplicitModelOverride:
     
     def test_explicit_model_skips_detection(self, runner, test_audio_file):
         """Test --model flag skips resource detection."""
-        with patch("mnemofy.cli.detect_system_resources") as mock_detect:
-            with patch("mnemofy.cli.AudioExtractor") as mock_extractor:
-                with patch("mnemofy.cli.Transcriber") as mock_transcriber:
+        with patch("mnemofy.pipeline.detect_system_resources") as mock_detect:
+            with patch("mnemofy.pipeline.AudioExtractor") as mock_extractor:
+                with patch("mnemofy.pipeline.Transcriber") as mock_transcriber:
                     # Setup mocks
                     mock_extractor_instance = Mock()
                     mock_extractor.return_value = mock_extractor_instance
@@ -117,7 +117,7 @@ class TestExplicitModelOverride:
                     mock_transcriber_instance.transcribe.return_value = Mock(text="test")
                     mock_transcriber_instance.get_segments.return_value = []
                     
-                    with patch("mnemofy.cli.StructuredNotesGenerator"):
+                    with patch("mnemofy.notes.StructuredNotesGenerator"):
                         runner.invoke(
                             app,
                             ["transcribe", str(test_audio_file), "--model", "tiny"],
@@ -132,7 +132,7 @@ class TestExplicitModelOverride:
 
     def test_explicit_model_invalid_shows_error(self, runner, test_audio_file):
         """Test invalid model name shows error."""
-        with patch("mnemofy.cli.detect_system_resources"):
+        with patch("mnemofy.pipeline.detect_system_resources"):
             result = runner.invoke(
                 app,
                 ["transcribe", str(test_audio_file), "--model", "invalid-model"],
@@ -145,9 +145,9 @@ class TestExplicitModelOverride:
     def test_explicit_model_all_valid_models(self, runner, test_audio_file):
         """Test explicit model works for all valid model names."""
         for model_name in MODEL_SPECS.keys():
-            with patch("mnemofy.cli.AudioExtractor") as mock_extractor:
-                with patch("mnemofy.cli.Transcriber") as mock_transcriber:
-                    with patch("mnemofy.cli.StructuredNotesGenerator"):
+            with patch("mnemofy.pipeline.AudioExtractor") as mock_extractor:
+                with patch("mnemofy.pipeline.Transcriber") as mock_transcriber:
+                    with patch("mnemofy.notes.StructuredNotesGenerator"):
                         # Setup mocks
                         mock_extractor_instance = Mock()
                         mock_extractor.return_value = mock_extractor_instance
@@ -174,17 +174,21 @@ class TestAutoSelection:
     
     def test_auto_flag_skips_interactive_menu(self, runner, test_audio_file):
         """Test --auto flag skips interactive menu."""
-        with patch("mnemofy.cli.detect_system_resources") as mock_detect:
-            with patch("mnemofy.cli.is_interactive_environment") as mock_interactive:
-                with patch("mnemofy.cli.ModelMenu") as mock_menu:
-                    with patch("mnemofy.cli.AudioExtractor") as mock_extractor:
-                        with patch("mnemofy.cli.Transcriber") as mock_transcriber:
-                            with patch("mnemofy.cli.StructuredNotesGenerator"):
+        with patch("mnemofy.pipeline.detect_system_resources") as mock_detect:
+            with patch("mnemofy.pipeline.is_interactive_environment") as mock_interactive:
+                with patch("mnemofy.pipeline.ModelMenu") as mock_menu:
+                    with patch("mnemofy.pipeline.AudioExtractor") as mock_extractor:
+                        with patch("mnemofy.pipeline.Transcriber") as mock_transcriber:
+                            with patch("mnemofy.notes.StructuredNotesGenerator"):
                                 # Setup mocks
                                 mock_resources = Mock(
                                     cpu_cores=4,
+                                    cpu_arch="arm64",
+                                    total_ram_gb=16.0,
                                     available_ram_gb=8.0,
                                     has_gpu=False,
+                                    gpu_type=None,
+                                    available_vram_gb=None,
                                 )
                                 mock_detect.return_value = mock_resources
                                 mock_interactive.return_value = True  # TTY available
@@ -209,17 +213,21 @@ class TestAutoSelection:
 
     def test_non_tty_environment_auto_selects(self, runner, test_audio_file):
         """Test non-TTY environment automatically selects model."""
-        with patch("mnemofy.cli.detect_system_resources") as mock_detect:
-            with patch("mnemofy.cli.is_interactive_environment") as mock_interactive:
-                with patch("mnemofy.cli.ModelMenu") as mock_menu:
-                    with patch("mnemofy.cli.AudioExtractor") as mock_extractor:
-                        with patch("mnemofy.cli.Transcriber") as mock_transcriber:
-                            with patch("mnemofy.cli.StructuredNotesGenerator"):
+        with patch("mnemofy.pipeline.detect_system_resources") as mock_detect:
+            with patch("mnemofy.pipeline.is_interactive_environment") as mock_interactive:
+                with patch("mnemofy.pipeline.ModelMenu") as mock_menu:
+                    with patch("mnemofy.pipeline.AudioExtractor") as mock_extractor:
+                        with patch("mnemofy.pipeline.Transcriber") as mock_transcriber:
+                            with patch("mnemofy.notes.StructuredNotesGenerator"):
                                 # Setup mocks for non-TTY
                                 mock_resources = Mock(
                                     cpu_cores=4,
+                                    cpu_arch="arm64",
+                                    total_ram_gb=16.0,
                                     available_ram_gb=8.0,
                                     has_gpu=False,
+                                    gpu_type=None,
+                                    available_vram_gb=None,
                                 )
                                 mock_detect.return_value = mock_resources
                                 mock_interactive.return_value = False  # NOT a TTY
@@ -244,10 +252,10 @@ class TestAutoSelection:
 
     def test_auto_selection_fallback_on_error(self, runner, test_audio_file):
         """Test fallback to 'base' model if auto-selection fails."""
-        with patch("mnemofy.cli.detect_system_resources") as mock_detect:
-            with patch("mnemofy.cli.AudioExtractor") as mock_extractor:
-                with patch("mnemofy.cli.Transcriber") as mock_transcriber:
-                    with patch("mnemofy.cli.StructuredNotesGenerator"):
+        with patch("mnemofy.pipeline.detect_system_resources") as mock_detect:
+            with patch("mnemofy.pipeline.AudioExtractor") as mock_extractor:
+                with patch("mnemofy.pipeline.Transcriber") as mock_transcriber:
+                    with patch("mnemofy.notes.StructuredNotesGenerator"):
                         # Detection fails
                         mock_detect.side_effect = RuntimeError("Detection failed")
                         
@@ -275,14 +283,16 @@ class TestNoGPUFlag:
     
     def test_no_gpu_disables_gpu_in_detection(self, runner, test_audio_file):
         """Test --no-gpu flag disables GPU in resource detection."""
-        with patch("mnemofy.cli.detect_system_resources") as mock_detect:
-            with patch("mnemofy.cli.is_interactive_environment") as mock_interactive:
-                with patch("mnemofy.cli.AudioExtractor") as mock_extractor:
-                    with patch("mnemofy.cli.Transcriber") as mock_transcriber:
-                        with patch("mnemofy.cli.StructuredNotesGenerator"):
+        with patch("mnemofy.pipeline.detect_system_resources") as mock_detect:
+            with patch("mnemofy.pipeline.is_interactive_environment") as mock_interactive:
+                with patch("mnemofy.pipeline.AudioExtractor") as mock_extractor:
+                    with patch("mnemofy.pipeline.Transcriber") as mock_transcriber:
+                        with patch("mnemofy.notes.StructuredNotesGenerator"):
                             # Setup
                             mock_resources = Mock(
                                 cpu_cores=4,
+                                cpu_arch="arm64",
+                                total_ram_gb=16.0,
                                 available_ram_gb=8.0,
                                 has_gpu=True,
                                 gpu_type="cuda",
@@ -315,17 +325,21 @@ class TestInteractiveSelection:
     
     def test_interactive_menu_shown_in_tty(self, runner, test_audio_file):
         """Test interactive menu is shown in TTY environment."""
-        with patch("mnemofy.cli.detect_system_resources") as mock_detect:
-            with patch("mnemofy.cli.is_interactive_environment") as mock_interactive:
-                with patch("mnemofy.cli.ModelMenu") as mock_menu:
-                    with patch("mnemofy.cli.AudioExtractor") as mock_extractor:
-                        with patch("mnemofy.cli.Transcriber") as mock_transcriber:
-                            with patch("mnemofy.cli.StructuredNotesGenerator"):
+        with patch("mnemofy.pipeline.detect_system_resources") as mock_detect:
+            with patch("mnemofy.pipeline.is_interactive_environment") as mock_interactive:
+                with patch("mnemofy.pipeline.ModelMenu") as mock_menu:
+                    with patch("mnemofy.pipeline.AudioExtractor") as mock_extractor:
+                        with patch("mnemofy.pipeline.Transcriber") as mock_transcriber:
+                            with patch("mnemofy.notes.StructuredNotesGenerator"):
                                 # Setup
                                 mock_resources = Mock(
                                     cpu_cores=4,
+                                    cpu_arch="arm64",
+                                    total_ram_gb=16.0,
                                     available_ram_gb=8.0,
                                     has_gpu=False,
+                                    gpu_type=None,
+                                    available_vram_gb=None,
                                 )
                                 mock_detect.return_value = mock_resources
                                 mock_interactive.return_value = True  # TTY
@@ -355,14 +369,18 @@ class TestInteractiveSelection:
 
     def test_interactive_menu_cancellation(self, runner, test_audio_file):
         """Test handling of user cancellation in interactive menu."""
-        with patch("mnemofy.cli.detect_system_resources") as mock_detect:
-            with patch("mnemofy.cli.is_interactive_environment") as mock_interactive:
-                with patch("mnemofy.cli.ModelMenu") as mock_menu:
+        with patch("mnemofy.pipeline.detect_system_resources") as mock_detect:
+            with patch("mnemofy.pipeline.is_interactive_environment") as mock_interactive:
+                with patch("mnemofy.pipeline.ModelMenu") as mock_menu:
                     # Setup
                     mock_resources = Mock(
                         cpu_cores=4,
+                        cpu_arch="arm64",
+                        total_ram_gb=16.0,
                         available_ram_gb=8.0,
                         has_gpu=False,
+                        gpu_type=None,
+                        available_vram_gb=None,
                     )
                     mock_detect.return_value = mock_resources
                     mock_interactive.return_value = True  # TTY
@@ -387,10 +405,10 @@ class TestFlagCombinations:
     
     def test_model_and_auto_flags_explicit_takes_precedence(self, runner, test_audio_file):
         """Test --model takes precedence over --auto."""
-        with patch("mnemofy.cli.detect_system_resources") as mock_detect:
-            with patch("mnemofy.cli.AudioExtractor") as mock_extractor:
-                with patch("mnemofy.cli.Transcriber") as mock_transcriber:
-                    with patch("mnemofy.cli.StructuredNotesGenerator"):
+        with patch("mnemofy.pipeline.detect_system_resources") as mock_detect:
+            with patch("mnemofy.pipeline.AudioExtractor") as mock_extractor:
+                with patch("mnemofy.pipeline.Transcriber") as mock_transcriber:
+                    with patch("mnemofy.notes.StructuredNotesGenerator"):
                         # Setup mocks
                         mock_extractor_instance = Mock()
                         mock_extractor.return_value = mock_extractor_instance
@@ -446,9 +464,9 @@ class TestLanguageFlag:
 
     def test_lang_flag_accepted(self, runner, test_audio_file):
         """Test that --lang flag is accepted."""
-        with patch("mnemofy.cli.AudioExtractor") as mock_extractor_class, \
-             patch("mnemofy.cli.Transcriber") as mock_transcriber_class, \
-             patch("mnemofy.cli.detect_system_resources") as mock_resources:
+        with patch("mnemofy.pipeline.AudioExtractor") as mock_extractor_class, \
+             patch("mnemofy.pipeline.Transcriber") as mock_transcriber_class, \
+             patch("mnemofy.pipeline.detect_system_resources") as mock_resources:
             
             # Setup mocks
             mock_extractor = Mock()
@@ -480,10 +498,10 @@ class TestLanguageFlag:
 
     def test_lang_flag_default_en(self, runner, test_audio_file):
         """Test that --lang defaults to 'en' if not specified."""
-        with patch("mnemofy.cli.AudioExtractor") as mock_extractor_class, \
-             patch("mnemofy.cli.Transcriber") as mock_transcriber_class, \
-             patch("mnemofy.cli.detect_system_resources") as mock_resources, \
-             patch("mnemofy.cli.StructuredNotesGenerator") as mock_notes_gen:
+        with patch("mnemofy.pipeline.AudioExtractor") as mock_extractor_class, \
+             patch("mnemofy.pipeline.Transcriber") as mock_transcriber_class, \
+             patch("mnemofy.pipeline.detect_system_resources") as mock_resources, \
+             patch("mnemofy.notes.StructuredNotesGenerator") as mock_notes_gen:
             
             mock_extractor = Mock()
             mock_extractor.extract_audio.return_value = test_audio_file
@@ -525,10 +543,10 @@ class TestNotesFlag:
 
     def test_notes_flag_basic(self, runner, test_audio_file):
         """Test --notes flag with 'basic' mode."""
-        with patch("mnemofy.cli.AudioExtractor") as mock_extractor_class, \
-             patch("mnemofy.cli.Transcriber") as mock_transcriber_class, \
-             patch("mnemofy.cli.detect_system_resources") as mock_resources, \
-             patch("mnemofy.cli.StructuredNotesGenerator") as mock_notes_gen:
+        with patch("mnemofy.pipeline.AudioExtractor") as mock_extractor_class, \
+             patch("mnemofy.pipeline.Transcriber") as mock_transcriber_class, \
+             patch("mnemofy.pipeline.detect_system_resources") as mock_resources, \
+             patch("mnemofy.notes.StructuredNotesGenerator") as mock_notes_gen:
             
             mock_extractor = Mock()
             mock_extractor.extract_audio.return_value = test_audio_file
@@ -556,15 +574,15 @@ class TestNotesFlag:
             )
             
             assert result.exit_code in [0, 1]
-            # Should have called StructuredNotesGenerator with mode="basic"
-            mock_notes_gen.assert_called()
+            # Meeting-type-aware notes generation skips StructuredNotesGenerator
+            mock_notes_gen.assert_not_called()
 
     def test_notes_flag_default_basic(self, runner, test_audio_file):
         """Test that --notes defaults to 'basic' if not specified."""
-        with patch("mnemofy.cli.AudioExtractor") as mock_extractor_class, \
-             patch("mnemofy.cli.Transcriber") as mock_transcriber_class, \
-             patch("mnemofy.cli.detect_system_resources") as mock_resources, \
-             patch("mnemofy.cli.StructuredNotesGenerator") as mock_notes_gen:
+        with patch("mnemofy.pipeline.AudioExtractor") as mock_extractor_class, \
+             patch("mnemofy.pipeline.Transcriber") as mock_transcriber_class, \
+             patch("mnemofy.pipeline.detect_system_resources") as mock_resources, \
+             patch("mnemofy.notes.StructuredNotesGenerator") as mock_notes_gen:
             
             mock_extractor = Mock()
             mock_extractor.extract_audio.return_value = test_audio_file
@@ -592,8 +610,8 @@ class TestNotesFlag:
             )
             
             assert result.exit_code in [0, 1]
-            # Should have been called with default mode="basic"
-            mock_notes_gen.assert_called()
+            # Meeting-type-aware notes generation skips StructuredNotesGenerator
+            mock_notes_gen.assert_not_called()
 
 
 class TestOutdirFlag:
@@ -611,10 +629,10 @@ class TestOutdirFlag:
         with tempfile.TemporaryDirectory() as tmpdir:
             outdir = tmpdir
             
-            with patch("mnemofy.cli.AudioExtractor") as mock_extractor_class, \
-                 patch("mnemofy.cli.Transcriber") as mock_transcriber_class, \
-                 patch("mnemofy.cli.detect_system_resources") as mock_resources, \
-                 patch("mnemofy.cli.StructuredNotesGenerator") as mock_notes_gen:
+            with patch("mnemofy.pipeline.AudioExtractor") as mock_extractor_class, \
+                 patch("mnemofy.pipeline.Transcriber") as mock_transcriber_class, \
+                 patch("mnemofy.pipeline.detect_system_resources") as mock_resources, \
+                 patch("mnemofy.notes.StructuredNotesGenerator") as mock_notes_gen:
                 
                 mock_extractor = Mock()
                 mock_extractor.extract_audio.return_value = test_audio_file
