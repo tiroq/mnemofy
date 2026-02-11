@@ -223,32 +223,6 @@ is_mnemofy_installed() {
     command -v mnemofy &> /dev/null
 }
 
-# Show upgrade prompt
-prompt_upgrade() {
-    echo ""
-    log_info "mnemofy is already installed"
-    
-    # Get current and latest versions
-    CURRENT_VERSION=$(mnemofy version 2>&1 | grep -o '[0-9]*\.[0-9]*\.[0-9]*' || echo "unknown")
-    log_info "Current version: $CURRENT_VERSION"
-    
-    # Check if running non-interactively (piped input)
-    if [ ! -t 0 ]; then
-        log_info "Running in non-interactive mode. Auto-upgrading..."
-        return 0
-    fi
-    
-    echo ""
-    read -p "Do you want to upgrade mnemofy? (y/n) " -n 1 -r
-    echo
-    
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        return 0
-    else
-        return 1
-    fi
-}
-
 # Verify installation
 verify_installation() {
     log_info "Verifying installation..."
@@ -279,10 +253,44 @@ main() {
     echo "╚═══════════════════════════════════════╝"
     echo ""
     
+    # Check for upgrade-only mode
+    UPGRADE_ONLY="${MNEMOFY_UPGRADE_ONLY:-false}"
+    
     # Check if mnemofy is already installed
     if is_mnemofy_installed; then
-        if prompt_upgrade; then
-            # Upgrade mode
+        echo ""
+        CURRENT_VERSION=$(mnemofy version 2>&1 | grep -o '[0-9]*\.[0-9]*\.[0-9]*' || echo "unknown")
+        log_info "mnemofy $CURRENT_VERSION is already installed"
+        echo ""
+        
+        # Always upgrade if explicitly requested
+        if [ "$UPGRADE_ONLY" = "true" ] || [ "$1" = "--upgrade" ]; then
+            log_info "Starting upgrade..."
+            upgrade_mnemofy
+            verify_installation
+            echo ""
+            log_success "Upgrade complete!"
+            echo ""
+            return 0
+        fi
+        
+        # Check if running from curl pipe (non-interactive)
+        if [ ! -t 0 ]; then
+            # Auto-upgrade in non-interactive mode
+            log_info "Auto-upgrading mnemofy..."
+            upgrade_mnemofy
+            verify_installation
+            echo ""
+            log_success "Upgrade complete!"
+            echo ""
+            return 0
+        fi
+        
+        # Interactive mode - ask user
+        read -p "Do you want to upgrade mnemofy? (y/n) " -n 1 -r
+        echo ""
+        
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
             log_info "Starting upgrade..."
             upgrade_mnemofy
             verify_installation
