@@ -68,6 +68,21 @@ class BaseLLMEngine(ABC):
             ValueError: If LLM returns ungrounded content
         """
         pass
+
+    @abstractmethod
+    async def repair_transcript(self, prompt: str) -> Any:
+        """Repair ASR errors in a transcript using LLM.
+
+        Args:
+            prompt: Full prompt for transcript repair
+
+        Returns:
+            Repaired transcript text or a structured response dict
+
+        Raises:
+            LLMError: If LLM request fails after retries
+        """
+        pass
     
     @abstractmethod
     def get_model_name(self) -> str:

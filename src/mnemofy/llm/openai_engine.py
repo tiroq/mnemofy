@@ -214,6 +214,24 @@ Respond in JSON format:
             
         except (json.JSONDecodeError, KeyError) as e:
             raise LLMError(f"Invalid LLM response: {e}")
+
+    async def repair_transcript(self, prompt: str) -> Any:
+        """Repair transcript text using OpenAI.
+
+        Args:
+            prompt: Repair prompt with original transcript
+
+        Returns:
+            Repaired transcript text (string) or structured response
+        """
+        try:
+            response = self._call_api([
+                {"role": "system", "content": "You repair ASR transcripts."},
+                {"role": "user", "content": prompt}
+            ])
+            return response
+        except Exception as e:
+            raise LLMError(f"Repair request failed: {e}")
     
     def get_model_name(self) -> str:
         """Get model name."""

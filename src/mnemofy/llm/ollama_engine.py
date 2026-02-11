@@ -159,6 +159,20 @@ JSON format only:
             
         except (json.JSONDecodeError, KeyError) as e:
             raise LLMError(f"Invalid Ollama response: {e}")
+
+    async def repair_transcript(self, prompt: str) -> Any:
+        """Repair transcript text using Ollama.
+
+        Args:
+            prompt: Repair prompt with original transcript
+
+        Returns:
+            Repaired transcript text
+        """
+        try:
+            return self._call_api(prompt, json_mode=False)
+        except Exception as e:
+            raise LLMError(f"Repair request failed: {e}")
     
     def get_model_name(self) -> str:
         """Get model name."""
