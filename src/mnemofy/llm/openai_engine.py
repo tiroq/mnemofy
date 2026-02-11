@@ -225,10 +225,14 @@ Respond in JSON format:
             Repaired transcript text (string) or structured response
         """
         try:
-            response = self._call_api([
-                {"role": "system", "content": "You repair ASR transcripts."},
-                {"role": "user", "content": prompt}
-            ])
+            # Use extended timeout for repair (120s instead of default 30s)
+            response = self._call_api(
+                [
+                    {"role": "system", "content": "You repair ASR transcripts."},
+                    {"role": "user", "content": prompt}
+                ],
+                timeout=120
+            )
             return response
         except Exception as e:
             raise LLMError(f"Repair request failed: {e}")
@@ -237,8 +241,17 @@ Respond in JSON format:
         """Get model name."""
         return self.model
     
-    def _call_api(self, messages: List[Dict[str, str]], temperature: float = 0.0) -> str:
-        """Call OpenAI API with retry logic."""
+    def _call_api(self, messages: List[Dict[str, str]], temperature: float = 0.0, timeout: Optional[int] = None) -> str:
+        """Call OpenAI API with retry logic.
+        
+        Args:
+            messages: List of message dicts with role and content
+            temperature: Sampling temperature
+            timeout: Optional custom timeout in seconds (overrides default)
+        """
+        # Use custom timeout or fall back to instance timeout
+        effective_timeout = timeout if timeout is not None else self.timeout
+        
         for attempt in range(self.max_retries + 1):
             try:
                 response = self.client.post(
@@ -247,7 +260,8 @@ Respond in JSON format:
                         "model": self.model,
                         "messages": messages,
                         "temperature": temperature,
-                    }
+                    },
+                    timeout=effective_timeout
                 )
                 response.raise_for_status()
                 data = response.json()
