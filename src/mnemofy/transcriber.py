@@ -1,5 +1,6 @@
 """Speech transcription module using faster-whisper."""
 
+import logging
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -40,6 +41,7 @@ class Transcriber:
         """
         self.model_name = model_name
         self.model: WhisperModel | None = None
+        self.logger = logging.getLogger(__name__)
 
     def _load_model(self) -> None:
         """Load the Whisper model if not already loaded."""
@@ -432,78 +434,128 @@ class Transcriber:
         # Build full transcript text for LLM
         full_text = " ".join(seg["text"] for seg in segments)
         
-        # Build repair prompt
-        prompt = self._build_repair_prompt(full_text)
+        # For very long transcripts, process in chunks to avoid timeouts
+        MAX_CHARS_PER_CHUNK = 6000  # Conservative limit for LLM context
         
         try:
-            # Call LLM engine's repair method
-            repair_response = await llm_engine.repair_transcript(prompt)
-            
-            # Parse response - expecting JSON with repaired_text and changes
-            if isinstance(repair_response, dict):
-                repaired_text = repair_response.get("repaired_text", full_text)
-                repair_changes = repair_response.get("changes", [])
-            else:
-                # If response is just text, use it as repaired text
-                repaired_text = str(repair_response).strip()
-                repair_changes = []
-            
-            # Update segments with repaired text
-            if repaired_text and repaired_text != full_text:
-                # Update the full text field
-                result_transcription["text"] = repaired_text
+            if len(full_text) > MAX_CHARS_PER_CHUNK:
+                # Process segments in chunks
+                chunk_size = len(segments) // ((len(full_text) // MAX_CHARS_PER_CHUNK) + 1)
+                chunk_size = max(5, chunk_size)  # At least 5 segments per chunk
                 
-                # Map repaired text back to segments
-                # Strategy: Split repaired text into words and distribute to segments
-                # based on approximate word counts per segment
-                repaired_words = repaired_text.split()
-                original_words = full_text.split()
-                
-                # If word counts are similar, map proportionally
-                if len(repaired_words) > 0:
-                    word_index = 0
+                for chunk_start in range(0, len(segments), chunk_size):
+                    chunk_end = min(chunk_start + chunk_size, len(segments))
+                    chunk_segments = segments[chunk_start:chunk_end]
+                    chunk_text = " ".join(seg["text"] for seg in chunk_segments)
                     
-                    for seg_idx, seg in enumerate(segments):
-                        original_seg_text = seg["text"]
-                        original_seg_word_count = len(original_seg_text.split())
+                    # Build repair prompt for this chunk
+                    prompt = self._build_repair_prompt(chunk_text)
+                    
+                    try:
+                        # Call LLM engine's repair method
+                        repair_response = await llm_engine.repair_transcript(prompt)
                         
-                        # Determine how many words from repaired text to assign to this segment
-                        if seg_idx == len(segments) - 1:
-                            # Last segment gets all remaining words
-                            seg_repaired_words = repaired_words[word_index:]
+                        # Parse response
+                        if isinstance(repair_response, dict):
+                            repaired_text = repair_response.get("repaired_text", chunk_text)
                         else:
-                            # Proportional allocation
-                            words_to_take = max(1, original_seg_word_count)
-                            seg_repaired_words = repaired_words[word_index:word_index + words_to_take]
-                            word_index += words_to_take
+                            repaired_text = str(repair_response).strip()
                         
-                        repaired_seg_text = " ".join(seg_repaired_words)
-                        
-                        # Update segment if text changed
-                        if repaired_seg_text != original_seg_text:
-                            seg["text"] = repaired_seg_text
+                        if repaired_text and repaired_text != chunk_text:
+                            # Map repaired text back to segments
+                            repaired_words = repaired_text.split()
                             
-                            # Log the change
-                            changes.append(TranscriptChange(
-                                segment_id=seg.get("id", seg_idx),
-                                timestamp=self._format_timestamp(seg["start"], seg["end"]),
-                                before=original_seg_text,
-                                after=repaired_seg_text,
-                                reason="LLM-based ASR error correction",
-                                change_type="repair",
-                            ))
+                            if len(repaired_words) > 0:
+                                word_index = 0
+                                
+                                for idx, seg in enumerate(chunk_segments):
+                                    seg_idx = chunk_start + idx
+                                    original_seg_text = seg["text"]
+                                    original_seg_word_count = len(original_seg_text.split())
+                                    
+                                    # Proportional word allocation
+                                    if idx == len(chunk_segments) - 1:
+                                        seg_repaired_words = repaired_words[word_index:]
+                                    else:
+                                        words_to_take = max(1, original_seg_word_count)
+                                        seg_repaired_words = repaired_words[word_index:word_index + words_to_take]
+                                        word_index += words_to_take
+                                    
+                                    repaired_seg_text = " ".join(seg_repaired_words)
+                                    
+                                    if repaired_seg_text != original_seg_text:
+                                        seg["text"] = repaired_seg_text
+                                        
+                                        changes.append(TranscriptChange(
+                                            segment_id=seg.get("id", seg_idx),
+                                            timestamp=self._format_timestamp(seg["start"], seg["end"]),
+                                            before=original_seg_text,
+                                            after=repaired_seg_text,
+                                            reason=f"LLM repair (chunk {chunk_start//chunk_size + 1})",
+                                            change_type="repair",
+                                        ))
+                    
+                    except Exception as e:
+                        # Log error but continue with remaining chunks
+                        self.logger.warning(f"Failed to repair chunk {chunk_start}-{chunk_end}: {e}")
+                        continue
                 
-                # Also log any structured changes from LLM response
-                for change_info in repair_changes:
-                    if isinstance(change_info, dict) and change_info.get("before") != change_info.get("after"):
-                        changes.append(TranscriptChange(
-                            segment_id=change_info.get("segment_id", 0),
-                            timestamp=change_info.get("timestamp", "00:00-00:00"),
-                            before=change_info.get("before", ""),
-                            after=change_info.get("after", ""),
-                            reason=change_info.get("reason", "ASR error correction"),
-                            change_type="repair",
-                        ))
+                # Update full text
+                result_transcription["text"] = " ".join(seg["text"] for seg in segments)
+                
+            else:
+                # Process entire transcript at once (not too long)
+                prompt = self._build_repair_prompt(full_text)
+                
+                # Call LLM engine's repair method
+                repair_response = await llm_engine.repair_transcript(prompt)
+                
+                # Parse response
+                if isinstance(repair_response, dict):
+                    repaired_text = repair_response.get("repaired_text", full_text)
+                else:
+                    repaired_text = str(repair_response).strip()
+                
+                # Update segments with repaired text
+                if repaired_text and repaired_text != full_text:
+                    # Update the full text field
+                    result_transcription["text"] = repaired_text
+                    
+                    # Map repaired text back to segments
+                    repaired_words = repaired_text.split()
+                    
+                    if len(repaired_words) > 0:
+                        word_index = 0
+                        
+                        for seg_idx, seg in enumerate(segments):
+                            original_seg_text = seg["text"]
+                            original_seg_word_count = len(original_seg_text.split())
+                            
+                            # Determine how many words from repaired text to assign to this segment
+                            if seg_idx == len(segments) - 1:
+                                # Last segment gets all remaining words
+                                seg_repaired_words = repaired_words[word_index:]
+                            else:
+                                # Proportional allocation
+                                words_to_take = max(1, original_seg_word_count)
+                                seg_repaired_words = repaired_words[word_index:word_index + words_to_take]
+                                word_index += words_to_take
+                            
+                            repaired_seg_text = " ".join(seg_repaired_words)
+                            
+                            # Update segment if text changed
+                            if repaired_seg_text != original_seg_text:
+                                seg["text"] = repaired_seg_text
+                                
+                                # Log the change
+                                changes.append(TranscriptChange(
+                                    segment_id=seg.get("id", seg_idx),
+                                    timestamp=self._format_timestamp(seg["start"], seg["end"]),
+                                    before=original_seg_text,
+                                    after=repaired_seg_text,
+                                    reason="LLM-based ASR error correction",
+                                    change_type="repair",
+                                ))
         
         except Exception as e:
             raise RuntimeError(f"Failed to repair transcript: {e}") from e
@@ -513,16 +565,25 @@ class Transcriber:
             changes=changes,
         )
 
-    def _build_repair_prompt(self, transcript_text: str) -> str:
+    def _build_repair_prompt(self, transcript_text: str, max_length: int = 8000) -> str:
         """
         Build prompt for LLM transcript repair.
         
         Args:
             transcript_text: Original transcript text
+            max_length: Maximum transcript length to process (default: 8000 chars)
             
         Returns:
             Repair prompt
         """
+        # Truncate if too long to avoid context limits and timeouts
+        truncated = False
+        if len(transcript_text) > max_length:
+            transcript_text = transcript_text[:max_length]
+            truncated = True
+        
+        truncation_note = "\n\n**Note**: Transcript truncated to fit context limits." if truncated else ""
+        
         prompt = f"""You are a transcript repair assistant. Your task is to fix ASR (Automatic Speech Recognition) errors in the following transcript while preserving the original meaning and timestamps.
 
 **Instructions:**
@@ -530,10 +591,10 @@ class Transcriber:
 2. Preserve the original meaning - do NOT add, remove, or change the intent
 3. Do NOT invent content or add information not present in the original
 4. Keep technical terms, names, and domain-specific vocabulary intact unless clearly wrong
-5. Output the repaired transcript text
+5. Output ONLY the repaired transcript text, nothing else
 
 **Original Transcript:**
-{transcript_text}
+{transcript_text}{truncation_note}
 
 **Repaired Transcript:**
 """
