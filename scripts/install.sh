@@ -205,6 +205,44 @@ install_mnemofy() {
     log_success "mnemofy installed"
 }
 
+# Upgrade mnemofy
+upgrade_mnemofy() {
+    log_info "Upgrading mnemofy..."
+    
+    if pipx upgrade mnemofy; then
+        log_success "mnemofy upgraded successfully"
+        return 0
+    else
+        log_error "Failed to upgrade mnemofy"
+        return 1
+    fi
+}
+
+# Check if mnemofy is already installed
+is_mnemofy_installed() {
+    command -v mnemofy &> /dev/null
+}
+
+# Show upgrade prompt
+prompt_upgrade() {
+    echo ""
+    log_info "mnemofy is already installed"
+    
+    # Get current and latest versions
+    CURRENT_VERSION=$(mnemofy version 2>&1 | grep -o '[0-9]*\.[0-9]*\.[0-9]*' || echo "unknown")
+    log_info "Current version: $CURRENT_VERSION"
+    
+    echo ""
+    read -p "Do you want to upgrade mnemofy? (y/n) " -n 1 -r
+    echo
+    
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
 # Verify installation
 verify_installation() {
     log_info "Verifying installation..."
@@ -235,6 +273,25 @@ main() {
     echo "╚═══════════════════════════════════════╝"
     echo ""
     
+    # Check if mnemofy is already installed
+    if is_mnemofy_installed; then
+        if prompt_upgrade; then
+            # Upgrade mode
+            log_info "Starting upgrade..."
+            upgrade_mnemofy
+            verify_installation
+            echo ""
+            log_success "Upgrade complete!"
+            echo ""
+            return 0
+        else
+            log_info "Skipping upgrade. mnemofy is still installed."
+            verify_installation
+            return 0
+        fi
+    fi
+    
+    # Fresh installation flow
     detect_os
     
     # Check/install Python
