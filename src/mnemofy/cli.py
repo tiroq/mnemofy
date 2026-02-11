@@ -620,7 +620,27 @@ def transcribe(
         classification_result = None
         detected_type = None
         
-        if classify != "off" and meeting_type == "auto":
+        # Skip detection if transcription was skipped (unless explicitly requested)
+        skip_classification = False
+        if skip_transcription and classify != "off" and meeting_type == "auto":
+            console.print(f"[yellow]Note:[/yellow] Transcription was skipped")
+            console.print("[dim]Press 'c' to detect meeting type, or 's' to skip classification: [/dim]", end="")
+            try:
+                choice = readchar.readchar()
+                if choice.lower() == 'c':
+                    console.print("Detecting meeting type")
+                    logger.debug("User chose to detect meeting type despite skipping transcription")
+                else:
+                    console.print("Skipping classification")
+                    skip_classification = True
+                    logger.debug("User chose to skip meeting type detection")
+            except Exception as e:
+                # Non-interactive: skip classification when transcription was skipped
+                console.print("Skipping classification (non-interactive)")
+                skip_classification = True
+                logger.debug(f"Interactive prompt failed: {e}, defaulting to skip classification")
+        
+        if classify != "off" and meeting_type == "auto" and not skip_classification:
             logger.debug(f"Meeting type detection: mode={classify}, auto-detect=True")
             with Progress(
                 SpinnerColumn(),
