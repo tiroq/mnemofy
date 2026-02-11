@@ -14,13 +14,20 @@ import typer
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
+from mnemofy.audio import AudioExtractor
 from mnemofy.model_selector import (
+    ModelSelectionError,
+    filter_compatible_models,
     get_model_table,
     list_models,
+    recommend_model,
 )
+from mnemofy.notes import StructuredNotesGenerator
 from mnemofy.output_manager import OutputManager
 from mnemofy.pipeline import PipelineConfig, PipelineContext, TranscribePipeline
 from mnemofy.resources import detect_system_resources
+from mnemofy.transcriber import Transcriber
+from mnemofy.tui.model_menu import ModelMenu, is_interactive_environment
 
 app = typer.Typer(
     name="mnemofy",
