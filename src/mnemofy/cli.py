@@ -953,6 +953,177 @@ def version() -> None:
     console.print(f"mnemofy version {__version__}")
 
 
+@app.command()
+def analyze_metadata(
+    metadata_file: Optional[Path] = typer.Argument(
+        None,
+        help="Path to metadata JSON file (*.metadata.json). If not provided, will also analyze artifacts manifest if found.",
+        exists=True,
+        file_okay=True,
+        dir_okay=False,
+        readable=True,
+    ),
+    artifacts_file: Optional[Path] = typer.Option(
+        None,
+        "--artifacts",
+        "-a",
+        help="Path to artifacts manifest JSON file (*.artifacts.json)",
+        exists=True,
+        file_okay=True,
+        dir_okay=False,
+        readable=True,
+    ),
+    transcripts: Optional[list[Path]] = typer.Option(
+        None,
+        "--transcripts",
+        "-t",
+        help="Path to transcript JSON files to compare (can specify multiple times)",
+        exists=True,
+        file_okay=True,
+        dir_okay=False,
+        readable=True,
+    ),
+    cost: bool = typer.Option(
+        False,
+        "--cost",
+        "-c",
+        help="Include LLM cost estimation",
+    ),
+) -> None:
+    """Analyze processing metadata and artifacts.
+
+    This command analyzes the metadata and artifacts generated during transcription,
+    providing insights into model usage, processing time, and output statistics.
+
+    Examples:
+        # Analyze metadata file
+        mnemofy analyze-metadata meeting.metadata.json
+
+        # Analyze with artifacts manifest
+        mnemofy analyze-metadata meeting.metadata.json -a meeting.artifacts.json
+
+        # Compare multiple transcript JSONs
+        mnemofy analyze-metadata -t meeting.tiny.transcript.json -t meeting.base.transcript.json
+
+        # Include LLM cost estimation
+        mnemofy analyze-metadata meeting.metadata.json --cost
+    """
+    from mnemofy.analysis import (
+        analyze_processing_metadata,
+        analyze_artifacts_manifest,
+        compare_transcript_metadata,
+        calculate_processing_cost,
+    )
+
+    if not metadata_file and not artifacts_file and not transcripts:
+        console.print("[red]Error: Must provide at least one of: metadata file, artifacts file, or transcript files[/red]")
+        raise typer.Exit(1)
+
+    # Analyze metadata
+    if metadata_file:
+        if not metadata_file.exists():
+            console.print(f"[red]Error: Metadata file not found: {metadata_file}[/red]")
+            raise typer.Exit(1)
+        analyze_processing_metadata(metadata_file)
+
+        # Calculate cost if requested
+        if cost:
+            calculate_processing_cost(metadata_file)
+
+        # Auto-discover artifacts file if not specified
+        if not artifacts_file:
+            auto_artifacts = metadata_file.with_suffix(".artifacts.json")
+            if auto_artifacts.exists():
+                artifacts_file = auto_artifacts
+
+    # Analyze artifacts
+    if artifacts_file:
+        if not artifacts_file.exists():
+            console.print(f"[red]Error: Artifacts file not found: {artifacts_file}[/red]")
+            raise typer.Exit(1)
+        analyze_artifacts_manifest(artifacts_file)
+
+    # Compare transcripts
+    if transcripts:
+        valid_transcripts = [t for t in transcripts if t.exists()]
+        if len(valid_transcripts) < 2:
+            console.print("[yellow]Warning: Need at least 2 transcript files for comparison[/yellow]")
+        else:
+            compare_transcript_metadata(valid_transcripts)
+
+
+@app.command()
+def compare_runs(
+    history_file: Path = typer.Argument(
+        ...,
+        help="Path to run history file (*.run-history.jsonl)",
+        exists=True,
+        file_okay=True,
+        dir_okay=False,
+        readable=True,
+    ),
+    show_analysis: bool = typer.Option(
+        True,
+        "--analysis/--no-analysis",
+        help="Show detailed performance analysis",
+    ),
+    show_recommendations: bool = typer.Option(
+        True,
+        "--recommendations/--no-recommendations",
+        help="Show model recommendations",
+    ),
+) -> None:
+    """Compare transcription runs with different models.
+
+    This command analyzes the run history file to compare performance and quality
+    across different model runs, helping you choose the best model for your needs.
+
+    The run history file (*.run-history.jsonl) is automatically created by the
+    transcribe command each time you process a file.
+
+    Examples:
+        # Compare all runs
+        mnemofy compare-runs meeting.run-history.jsonl
+
+        # Show only comparison table, skip analysis
+        mnemofy compare-runs meeting.run-history.jsonl --no-analysis
+
+        # Skip recommendations
+        mnemofy compare-runs meeting.run-history.jsonl --no-recommendations
+    """
+    from mnemofy.analysis import (
+        load_run_history,
+        display_run_comparison,
+        analyze_model_performance,
+        show_recommendations,
+    )
+
+    if not history_file.exists():
+        console.print(f"[red]Error: Run history file not found: {history_file}[/red]")
+        raise typer.Exit(1)
+
+    # Load run history
+    runs = load_run_history(history_file)
+
+    if not runs:
+        console.print("[yellow]No valid run records found.[/yellow]")
+        raise typer.Exit(0)
+
+    # Display comparison table
+    display_run_comparison(runs)
+
+    # Show analysis
+    if show_analysis:
+        analyze_model_performance(runs)
+
+    # Show recommendations
+    if show_recommendations:
+        show_recommendations(runs)
+
+    console.print(f"\n[dim]Total runs analyzed: {len(runs)}[/dim]")
+    console.print(f"[dim]History file: {history_file}[/dim]\n")
+
+
 def _format_changes_log(changes: list) -> str:
     """Format transcript changes into markdown log.
     
