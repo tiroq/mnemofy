@@ -170,7 +170,8 @@ JSON format only:
             Repaired transcript text
         """
         try:
-            return self._call_api(prompt, json_mode=False)
+            # Use extended timeout for repair (120s instead of default 30s)
+            return self._call_api(prompt, json_mode=False, timeout=120)
         except Exception as e:
             raise LLMError(f"Repair request failed: {e}")
     
@@ -178,8 +179,17 @@ JSON format only:
         """Get model name."""
         return self.model
     
-    def _call_api(self, prompt: str, json_mode: bool = False) -> str:
-        """Call Ollama API with retry logic."""
+    def _call_api(self, prompt: str, json_mode: bool = False, timeout: Optional[int] = None) -> str:
+        """Call Ollama API with retry logic.
+        
+        Args:
+            prompt: Prompt text
+            json_mode: Whether to request JSON format response
+            timeout: Optional custom timeout in seconds (overrides default)
+        """
+        # Use custom timeout or fall back to instance timeout
+        effective_timeout = timeout if timeout is not None else self.timeout
+        
         for attempt in range(self.max_retries + 1):
             try:
                 payload = {
@@ -193,7 +203,8 @@ JSON format only:
                 
                 response = self.client.post(
                     f"{self.base_url}/api/generate",
-                    json=payload
+                    json=payload,
+                    timeout=effective_timeout
                 )
                 response.raise_for_status()
                 return response.json()["response"]
