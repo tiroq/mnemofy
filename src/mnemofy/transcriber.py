@@ -445,38 +445,65 @@ class Transcriber:
                 repair_changes = repair_response.get("changes", [])
             else:
                 # If response is just text, use it as repaired text
-                repaired_text = repair_response
+                repaired_text = str(repair_response).strip()
                 repair_changes = []
             
             # Update segments with repaired text
-            # Simple approach: split repaired text and map to segments
-            # Preserve timestamps
-            if repaired_text != full_text:
-                # For now, update full text and log the change
+            if repaired_text and repaired_text != full_text:
+                # Update the full text field
                 result_transcription["text"] = repaired_text
                 
-                # Log repairs from LLM response
-                for idx, change_info in enumerate(repair_changes):
-                    if isinstance(change_info, dict):
+                # Map repaired text back to segments
+                # Strategy: Split repaired text into words and distribute to segments
+                # based on approximate word counts per segment
+                repaired_words = repaired_text.split()
+                original_words = full_text.split()
+                
+                # If word counts are similar, map proportionally
+                if len(repaired_words) > 0:
+                    word_index = 0
+                    
+                    for seg_idx, seg in enumerate(segments):
+                        original_seg_text = seg["text"]
+                        original_seg_word_count = len(original_seg_text.split())
+                        
+                        # Determine how many words from repaired text to assign to this segment
+                        if seg_idx == len(segments) - 1:
+                            # Last segment gets all remaining words
+                            seg_repaired_words = repaired_words[word_index:]
+                        else:
+                            # Proportional allocation
+                            words_to_take = max(1, original_seg_word_count)
+                            seg_repaired_words = repaired_words[word_index:word_index + words_to_take]
+                            word_index += words_to_take
+                        
+                        repaired_seg_text = " ".join(seg_repaired_words)
+                        
+                        # Update segment if text changed
+                        if repaired_seg_text != original_seg_text:
+                            seg["text"] = repaired_seg_text
+                            
+                            # Log the change
+                            changes.append(TranscriptChange(
+                                segment_id=seg.get("id", seg_idx),
+                                timestamp=self._format_timestamp(seg["start"], seg["end"]),
+                                before=original_seg_text,
+                                after=repaired_seg_text,
+                                reason="LLM-based ASR error correction",
+                                change_type="repair",
+                            ))
+                
+                # Also log any structured changes from LLM response
+                for change_info in repair_changes:
+                    if isinstance(change_info, dict) and change_info.get("before") != change_info.get("after"):
                         changes.append(TranscriptChange(
-                            segment_id=idx,
+                            segment_id=change_info.get("segment_id", 0),
                             timestamp=change_info.get("timestamp", "00:00-00:00"),
                             before=change_info.get("before", ""),
                             after=change_info.get("after", ""),
                             reason=change_info.get("reason", "ASR error correction"),
                             change_type="repair",
                         ))
-                
-                # If no detailed changes, create a summary change
-                if not changes:
-                    changes.append(TranscriptChange(
-                        segment_id=0,
-                        timestamp="00:00-00:00",
-                        before="[Full transcript]",
-                        after="[Repaired transcript]",
-                        reason="LLM-based ASR error correction",
-                        change_type="repair",
-                    ))
         
         except Exception as e:
             raise RuntimeError(f"Failed to repair transcript: {e}") from e
