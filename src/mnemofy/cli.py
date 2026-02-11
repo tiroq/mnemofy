@@ -8,6 +8,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
 
+import click
 import readchar
 import typer
 from rich.console import Console
@@ -213,6 +214,16 @@ def transcribe(
         force=True
     )
     logger = logging.getLogger(__name__)
+
+    try:
+        ctx = click.get_current_context(silent=True)
+        repair_source = ctx.get_parameter_source("repair") if ctx else None
+        repair_requested = (
+            repair_source is not None
+            and repair_source != click.core.ParameterSource.DEFAULT
+        )
+    except Exception:
+        repair_requested = repair
     
     # Start timing for processing metadata
     process_start_time = datetime.now()
@@ -486,7 +497,7 @@ def transcribe(
                     transcriber = Transcriber(model_name=selected_model)
                 
                 # Validate repair requirements
-                if repair and not llm_engine_instance:
+                if repair_requested and repair and not llm_engine_instance:
                     console.print("[yellow]Warning:[/yellow] --repair requires LLM engine, skipping repair")
                     repair = False
                 
@@ -536,26 +547,26 @@ def transcribe(
                 console.print("[dim]Skipping transcript re-transcription (using existing transcript)[/dim]")
                 logger.debug("Skipping transcript preprocessing because existing transcript was used")
                 
-                # Check if repair was requested but LLM engine not available
-                if repair and not llm_engine_instance:
-                    console.print(f"[yellow]Note:[/yellow] Repair requires LLM engine, which is not available")
-                    console.print("[dim]Press 'y' to proceed without repair, or any other key to cancel: [/dim]", end="")
-                    try:
-                        choice = readchar.readchar()
-                        if choice.lower() == 'y':
-                            console.print("Proceeding without repair")
-                            repair = False
-                            logger.debug("User chose to proceed without repair")
-                        else:
-                            console.print("Cancelled")
-                            console.print("[yellow]Please enable LLM engine or re-transcribe without --repair flag[/yellow]")
-                            raise typer.Exit(1)
-                    except Exception as e:
-                        # Non-interactive: proceed without repair
-                        console.print("Proceeding without repair (non-interactive)")
+            # Check if repair was requested but LLM engine not available
+                if repair_requested and repair and not llm_engine_instance:
+                console.print(f"[yellow]Note:[/yellow] Repair requires LLM engine, which is not available")
+                console.print("[dim]Press 'y' to proceed without repair, or any other key to cancel: [/dim]", end="")
+                try:
+                    choice = readchar.readchar()
+                    if choice.lower() == 'y':
+                        console.print("Proceeding without repair")
                         repair = False
-                        logger.debug(f"Interactive prompt failed: {e}, defaulting to proceed without repair")
-            
+                        logger.debug("User chose to proceed without repair")
+                    else:
+                        console.print("Cancelled")
+                        console.print("[yellow]Please enable LLM engine or re-transcribe without --repair flag[/yellow]")
+                        raise typer.Exit(1)
+                except Exception as e:
+                    # Non-interactive: proceed without repair
+                    console.print("Proceeding without repair (non-interactive)")
+                    repair = False
+                    logger.debug(f"Interactive prompt failed: {e}, defaulting to proceed without repair")
+        
             # Determine effective language: prefer explicit --lang, then detected, then fallback
             detected_language = transcription.get("language") if transcription else None
             effective_language = lang or detected_language or "en"
