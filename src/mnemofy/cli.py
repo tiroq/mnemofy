@@ -14,37 +14,13 @@ import typer
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
-from mnemofy.artifacts import (
-    ProcessingMetadata,
-    ASREngineInfo,
-    LLMEngineInfo,
-    ProcessingConfig,
-    ArtifactManifest,
-    create_processing_metadata,
-    create_artifact_manifest,
-)
-from mnemofy.audio import AudioExtractor
-from mnemofy.classifier import HeuristicClassifier, MeetingType, extract_high_signal_segments
-from mnemofy.formatters import TranscriptFormatter
-from mnemofy.llm import get_llm_engine, get_llm_config
-from mnemofy.llm.base import LLMError
 from mnemofy.model_selector import (
-    ModelSelectionError,
     get_model_table,
     list_models,
-    recommend_model,
-    MODEL_SPECS,
-)
-from mnemofy.notes import (
-    StructuredNotesGenerator,
-    BasicNotesExtractor,
-    render_meeting_notes,
 )
 from mnemofy.output_manager import OutputManager
+from mnemofy.pipeline import PipelineConfig, PipelineContext, TranscribePipeline
 from mnemofy.resources import detect_system_resources
-from mnemofy.transcriber import Transcriber
-from mnemofy.tui.model_menu import ModelMenu, is_interactive_environment
-from mnemofy.tui.meeting_type_menu import select_meeting_type
 
 app = typer.Typer(
     name="mnemofy",
@@ -203,9 +179,6 @@ def transcribe(
     - Non-TTY (piped input, CI/CD): Auto-selects silently
     - Fallback: Uses 'base' model if detection fails
     """
-    import logging
-    import time
-    
     # Configure logging based on verbose flag
     log_level = logging.DEBUG if verbose else logging.WARNING
     logging.basicConfig(
@@ -213,8 +186,8 @@ def transcribe(
         format='[%(levelname)s] %(message)s',
         force=True
     )
-    logger = logging.getLogger(__name__)
-
+    
+    # Detect if --repair was explicitly requested (vs defaulted)
     try:
         ctx = click.get_current_context(silent=True)
         repair_source = ctx.get_parameter_source("repair") if ctx else None
@@ -225,10 +198,7 @@ def transcribe(
     except Exception:
         repair_requested = repair
     
-    # Start timing for processing metadata
-    process_start_time = datetime.now()
-    
-    # Handle --list-models flag (exit early)
+    # Handle --list-models flag (exit early, without pipeline)
     if list_models_flag:
         try:
             resources = detect_system_resources(no_gpu=no_gpu)
@@ -247,22 +217,67 @@ def transcribe(
         console.print("[red]Error:[/red] INPUT_FILE is required when not using --list-models")
         raise typer.Exit(1)
     
-    # Model selection flow
-    selected_model = None
+    # Build pipeline configuration from CLI arguments
+    config = PipelineConfig(
+        model=model,
+        auto=auto,
+        no_gpu=no_gpu,
+        model_suffix=model_suffix,
+        llm_engine=llm_engine,
+        llm_model=llm_model,
+        llm_base_url=llm_base_url,
+        normalize=normalize,
+        repair=repair,
+        repair_requested=repair_requested,
+        remove_fillers=remove_fillers,
+        title=title,
+        keep_audio=keep_audio,
+        output=output,
+        lang=lang,
+        notes_mode=notes,
+        meeting_type=meeting_type,
+        classify=classify,
+        template=template,
+        no_interactive=no_interactive,
+        verbose=verbose,
+    )
     
-    # Step 1: Check for explicit model override
-    if model is not None:
-        selected_model = model
-        console.print(f"[dim]Using explicit model: {selected_model}[/dim]")
-        logger.debug(f"Model selection: explicit override '{selected_model}'")
-    else:
-        # Step 2: Detect system resources for auto-selection
-        try:
-            resources = detect_system_resources()
-            use_gpu = not no_gpu
-            
-            logger.debug(f"System resources detected: RAM={resources.available_ram_gb:.1f}GB, "
-                        f"GPU={'available' if resources.has_gpu else 'not available'}")
+    # Initialize OutputManager and pipeline context
+    try:
+        manager = OutputManager(input_file, outdir=outdir)
+    except Exception as e:
+        console.print(f"[red]Error:[/red] Failed to initialize output directory: {e}")
+        raise typer.Exit(1)
+    
+    context = PipelineContext(
+        input_file=input_file,
+        manager=manager,
+        process_start_time=datetime.now(),
+    )
+    
+    # Execute the pipeline
+    try:
+        pipeline = TranscribePipeline(config, context, console=console)
+        pipeline.run()
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Interrupted by user[/yellow]")
+        raise typer.Exit(1)
+    except Exception as e:
+        console.print(f"\n[bold red]Error:[/bold red] {e}")
+        raise typer.Exit(1)
+
+
+
+@app.command()
+def version() -> None:
+    """Show version information."""
+    from mnemofy import __version__
+
+    console.print(f"mnemofy version {__version__}")
+
+
+@app.command()
+def analyze_metadata(
             
             # Step 3: Determine if interactive menu should be shown
             interactive_available = is_interactive_environment()
